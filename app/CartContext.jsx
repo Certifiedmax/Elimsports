@@ -5,17 +5,19 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 const CartContext = createContext();
 
 export function CartProvider({ children }) {
-  const [cart, setCart] = useState([]);
-
-  useEffect(() => {
+  // Initialize directly from localStorage to prevent empty state flash on refresh
+  const [cart, setCart] = useState(() => {
+    if (typeof window === "undefined") return [];
     try {
       const saved = localStorage.getItem("apex_cart");
-      if (saved) setCart(JSON.parse(saved));
+      return saved ? JSON.parse(saved) : [];
     } catch (e) {
       console.error(e);
+      return [];
     }
-  }, []);
+  });
 
+  // Save to localStorage whenever cart updates
   useEffect(() => {
     try {
       localStorage.setItem("apex_cart", JSON.stringify(cart));
@@ -24,26 +26,40 @@ export function CartProvider({ children }) {
     }
   }, [cart]);
 
-  const addToCart = (product, quantity = 1) => {
+  const addToCart = (product, quantity = 1, customSpecs = []) => {
+    // Generate a deterministic, non-scrambled unique signature using join("|")
+    const specsString = customSpecs.length > 0 ? customSpecs.join("|") : "default";
+    const uniqueCartItemId = `${product.id}__${specsString}`;
+
     setCart((prev) => {
-      const idx = prev.findIndex((item) => item.id === product.id);
+      const idx = prev.findIndex((item) => (item.cartItemId || item.id) === uniqueCartItemId);
       if (idx > -1) {
         const copy = [...prev];
         copy[idx].quantity += quantity;
         return copy;
       }
-      return [...prev, { ...product, quantity }];
+      return [
+        ...prev,
+        {
+          ...product,
+          cartItemId: uniqueCartItemId,
+          specs: customSpecs.length > 0 ? customSpecs : product.specs || [],
+          quantity,
+        },
+      ];
     });
   };
 
-  const removeFromCart = (id) => {
-    setCart((prev) => prev.filter((item) => item.id !== id));
+  const removeFromCart = (cartItemId) => {
+    setCart((prev) => prev.filter((item) => (item.cartItemId || item.id) !== cartItemId));
   };
 
-  const updateQuantity = (id, qty) => {
-    if (qty < 1) return removeFromCart(id);
+  const updateQuantity = (cartItemId, qty) => {
+    if (qty < 1) return removeFromCart(cartItemId);
     setCart((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, quantity: qty } : item))
+      prev.map((item) =>
+        (item.cartItemId || item.id) === cartItemId ? { ...item, quantity: qty } : item
+      )
     );
   };
 

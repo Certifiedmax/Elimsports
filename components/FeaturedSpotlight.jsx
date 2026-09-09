@@ -2,195 +2,172 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowRight, Sparkles, CheckCircle2 } from "lucide-react";
 
-// =========================================================================
-// SPOTLIGHT DATA ENGINE
-// =========================================================================
-const EDITORIAL_STORIES = [
+const SPOTLIGHT_ITEMS = [
+  {
+    id: "astrox-99-pro",
+    tabLabel: "ASTROX 99 PRO",
+    heading: "YONEX ASTROX 99 PRO",
+    subheading: "POWER-DOMINANCE FOR SINGLES & HEAVY SMASHERS",
+    description: "Designed for dominant power hitters and singles specialists, the Yonex Astrox 99 Pro features a head-heavy balance and the innovative Volume Cut Resin across the frame. It holds the shuttle longer on the string bed to generate explosive, steep smashes and unmatched rotational control during high-intensity tournament matches.",
+    ctaLabel: "SHOP NOW",
+    href: "/rackets",
+    image: "https://i.pinimg.com/1200x/b6/77/fa/b677face56cb8a4b899e2b46d775780f.jpg"
+  },
   {
     id: "power-cushion-65z",
-    tabLabel: "65Z IS BACK",
-    badge: "Official Tournament Footwear",
-    heading: "POWER CUSHION 65Z IS BACK",
-    subheading: "THE CLASSICS ARE BACK IN STOCK",
-    description:
-      "The Yonex Power Cushion 65Z is back — one of the most iconic badminton shoes ever created, trusted by players around the world for its exceptional comfort, stability, and explosive court movement. Delivering outstanding shock absorption and energy return, helping players move faster and recover quicker during intense rallies.",
-    ctaLabel: "Shop Now",
+    tabLabel: "65Z FOOTWEAR",
+    heading: "POWER CUSHION 65Z",
+    subheading: "UNRIVALED STABILITY & JOLT ABSORPTION",
+    description: "The undisputed gold standard in indoor badminton footwear. Designed to withstand high-impact lunges and lightning-fast lateral footwork on indoor courts across Kenya, minimizing knee stress with advanced shock dispersion.",
+    ctaLabel: "SHOP NOW",
     href: "/shoes",
-    tagline: "MEN'S | WOMEN'S COURT GRIP",
-    image: "https://i.pinimg.com/1200x/07/8d/10/078d10c4b9c96971390f624413185c34.jpg",
-    specs: ["Power Cushion+ Tech", "Lateral Stability Claw", "Seamless Upper Fit"],
+    image: "https://i.pinimg.com/1200x/f4/06/87/f40687521813d2758db3c628beabc954.jpg"
   },
   {
-    id: "yae-1899-collection",
-    tabLabel: "1899 COLLECTION",
-    badge: "Limited Heritage Release",
-    heading: "YAE 1899 COLLECTION",
-    subheading: "NOW AVAILABLE IN NAIROBI",
-    description:
-      "A tribute to the heritage of the All England Open Badminton Championships. Premium tournament teamwear, vintage graphics, and pure cotton-blend hoodies engineered for players who respect the rich history of competitive badminton.",
-    ctaLabel: "Shop Now",
-    href: "/clothing",
-    tagline: "ALL ENGLAND HERITAGE",
-    image: "https://i.pinimg.com/736x/e4/e9/0e/e4e90e6fe8711d7b61c50cc335d6c4d2.jpg",
-    specs: ["Heritage Embroidery", "Dry-Fit Performance", "Official Tour Crest"],
-  },
+    id: "nanoflare-1000z",
+    tabLabel: "NANOFLARE 1000",
+    heading: "YONEX NANOFLARE 1000Z",
+    subheading: "LIGHTNING-FAST RACKET HEAD SPEED & EXPLOSIVE REPULSION",
+    description: "Engineered for the hyper-fast player who dominates the front court and dictating pace through lightning reflex exchanges. The Wide Profile Frame paired with the Sonic Flare System converts sheer swing velocity into devastating shuttle acceleration.",
+    ctaLabel: "SHOP NOW",
+    href: "/rackets",
+    image: "https://i.pinimg.com/1200x/46/16/51/4616519ac4b6bd6c5206c01f252c8e14.jpg"
+  }
 ];
 
 export default function FeaturedSpotlight() {
-  const [activeTab, setActiveTab] = useState(0);
-  const [isFading, setIsFading] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [animating, setAnimating] = useState(false);
+  const [progressKey, setProgressKey] = useState(0);
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  // Smooth auto-rotation every 7 seconds
+  const DURATION_SECONDS = 6; // 6 seconds per spotlight
+
   useEffect(() => {
-    if (isPaused) return;
+    setIsLoaded(true);
+  }, []);
 
-    const interval = setInterval(() => {
-      handleTabChange((activeTab + 1) % EDITORIAL_STORIES.length);
-    }, 7000);
+  // Reliable interval rotation loop matching CSS transition pill bars
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setAnimating(true);
+      setTimeout(() => {
+        setCurrentIndex((prev) => (prev + 1) % SPOTLIGHT_ITEMS.length);
+        setAnimating(false);
+        setProgressKey((prev) => prev + 1);
+      }, 350);
+    }, DURATION_SECONDS * 1000);
 
-    return () => clearInterval(interval);
-  }, [activeTab, isPaused]);
+    return () => clearInterval(timer);
+  }, []);
 
-  const handleTabChange = (newIndex) => {
-    if (newIndex === activeTab) return;
-    setIsFading(true);
+  const handleManualSelect = (idx) => {
+    if (idx === currentIndex || animating) return;
+    setAnimating(true);
     setTimeout(() => {
-      setActiveTab(newIndex);
-      setIsFading(false);
-    }, 250);
+      setCurrentIndex(idx);
+      setAnimating(false);
+      setProgressKey((prev) => prev + 1);
+    }, 350);
   };
 
-  const story = EDITORIAL_STORIES[activeTab];
+  const item = SPOTLIGHT_ITEMS[currentIndex];
 
   return (
-    <section 
-      className="max-w-[1720px] mx-auto px-6 sm:px-10 lg:px-14 py-20 bg-white select-none"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-    >
-      {/* 100% BORDER-FREE CENTRAL SPORTS UK SPLIT GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
+    <section className={`w-full bg-white py-16 sm:py-24 border-b border-neutral-100 select-none overflow-hidden transition-all duration-700 ease-out transform ${
+      isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+    }`}>
+      <div className="max-w-[1400px] mx-auto px-6 sm:px-12 lg:px-16">
         
-        {/* LEFT COLUMN: Clean Visual Stage with CSUK Zoom Animation */}
-        <div className="lg:col-span-6 flex flex-col justify-between min-h-[460px] sm:min-h-[520px] bg-neutral-50/70 rounded-2xl p-8 sm:p-12 relative overflow-hidden group">
+        {/* Immersive 50/50 Editorial Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-center">
           
-          {/* Top Badges */}
-          <div
-            className={`flex items-center justify-between transition-opacity duration-300 z-10 ${
-              isFading ? "opacity-0" : "opacity-100"
-            }`}
-          >
-            <span className="text-[10px] font-black uppercase tracking-widest text-neutral-800 bg-white px-3 py-1 rounded-full shadow-2xs border border-neutral-100">
-              {story.tagline}
-            </span>
-            <span className="text-[10px] font-black uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md flex items-center gap-1">
-              <Sparkles size={11} /> Stock Verified
-            </span>
-          </div>
-
-          {/* Centerpiece Image with CSUK Hover Scale Animation */}
-          <div
-            className={`my-auto py-6 flex items-center justify-center transition-all duration-400 ease-out transform z-10 ${
-              isFading ? "opacity-0 scale-95 translate-y-3" : "opacity-100 scale-100 translate-y-0"
-            }`}
-          >
-            <div className="relative w-full max-w-[420px] aspect-[4/3] flex items-center justify-center overflow-hidden">
-              <img
-                src={story.image}
-                alt={story.heading}
-                className="max-h-[340px] sm:max-h-[380px] w-auto max-w-full object-contain drop-shadow-xl transition-transform duration-700 ease-out group-hover:scale-105"
-              />
-            </div>
-          </div>
-
-          {/* Bottom Specs List */}
-          <div
-            className={`flex flex-wrap items-center gap-4 text-[11px] font-bold text-neutral-600 transition-opacity duration-300 z-10 ${
-              isFading ? "opacity-0" : "opacity-100"
-            }`}
-          >
-            {story.specs.map((spec, i) => (
-              <span key={i} className="flex items-center gap-1.5">
-                <CheckCircle2 size={13} className="text-blue-600" />
-                <span>{spec}</span>
-              </span>
-            ))}
-          </div>
-
-          {/* Subtle Ambient Radial Lighting */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
-        </div>
-
-        {/* RIGHT COLUMN: Editorial Story & Navigation */}
-        <div className="lg:col-span-6 flex flex-col justify-between min-h-[460px] sm:min-h-[520px] py-4 space-y-8">
-          
-          <div
-            className={`space-y-4 transition-all duration-300 ease-out ${
-              isFading ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"
-            }`}
-          >
-            <span className="text-xs font-black uppercase tracking-widest text-blue-600 block">
-              {story.badge}
-            </span>
-
-            <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-neutral-950 leading-tight">
-              {story.heading}
-            </h2>
-
-            <p className="text-xs font-black uppercase tracking-wider text-neutral-400">
-              {story.subheading}
-            </p>
-
-            <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed font-normal pt-2 max-w-xl">
-              {story.description}
-            </p>
-
-            <div className="pt-4">
-              <Link
-                href={story.href}
-                className="inline-flex items-center gap-2.5 px-9 py-4 bg-neutral-950 hover:bg-blue-600 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all duration-200 shadow-md cursor-pointer hover:shadow-lg"
-              >
-                <span>{story.ctaLabel}</span>
-                <ArrowRight size={14} />
-              </Link>
-            </div>
-          </div>
-
-          {/* Minimalist Tab Navigation Bar (Central Sports UK Style) */}
-          <div className="pt-6 border-t border-neutral-100 flex items-center gap-8 sm:gap-12">
-            {EDITORIAL_STORIES.map((tab, idx) => {
-              const isActive = activeTab === idx;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => handleTabChange(idx)}
-                  className="relative py-2 text-left cursor-pointer group focus:outline-none"
-                >
-                  <span
-                    className={`text-xs uppercase tracking-wider transition-colors duration-200 ${
+          {/* LEFT COLUMN: Large Visual Stage with NO Background Box */}
+          <div className="lg:col-span-6 relative aspect-[4/5] sm:aspect-[4/4] p-4 sm:p-6 flex items-center justify-center overflow-hidden bg-transparent">
+            <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+              {SPOTLIGHT_ITEMS.map((spot, idx) => {
+                const isActive = idx === currentIndex;
+                return (
+                  <div
+                    key={spot.id}
+                    className={`absolute inset-0 flex items-center justify-center p-4 transition-all duration-700 ease-out transform ${
                       isActive
-                        ? "text-neutral-950 font-black"
-                        : "text-neutral-400 group-hover:text-neutral-700 font-bold"
+                        ? "opacity-100 translate-y-0 scale-100 rotate-0 z-10"
+                        : "opacity-0 translate-y-12 scale-105 -rotate-1 z-0 pointer-events-none"
                     }`}
                   >
-                    {tab.tabLabel}
-                  </span>
-
-                  {/* Underline Indicator */}
-                  <div className="h-0.5 w-full bg-transparent mt-2 overflow-hidden rounded-full">
-                    <div
-                      className={`h-full bg-neutral-950 rounded-full transition-all duration-300 ease-out ${
-                        isActive ? "w-full" : "w-0"
-                      }`}
+                    <img
+                      src={spot.image}
+                      alt={spot.heading}
+                      className="w-full h-full object-contain filter drop-shadow-2xl transition-transform duration-700 hover:scale-105"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
                     />
                   </div>
-                </button>
-              );
-            })}
+                );
+              })}
+            </div>
+          </div>
+
+          {/* RIGHT COLUMN: Editorial Typography & Clean Pill Trackers */}
+          <div className="lg:col-span-6 flex flex-col justify-center space-y-8 py-4">
+            
+            <div className={`space-y-4 transition-all duration-500 ease-out ${animating ? "opacity-0 translate-y-4 filter blur-xs" : "opacity-100 translate-y-0 filter blur-0"}`}>
+              <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black uppercase tracking-tight text-neutral-950 leading-[1.05]">
+                {item.heading}
+              </h2>
+
+              <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed font-normal max-w-lg pt-2">
+                {item.description}
+              </p>
+
+              <div className="pt-2">
+                <span className="text-xs font-black uppercase tracking-[0.2em] text-neutral-950 block mb-6">
+                  {item.subheading}
+                </span>
+
+                <Link
+                  href={item.href}
+                  className="inline-block px-8 py-3.5 bg-neutral-950 hover:bg-blue-600 text-white font-black text-xs uppercase tracking-[0.2em] transition-all cursor-pointer shadow-md rounded-xl"
+                >
+                  {item.ctaLabel}
+                </Link>
+              </div>
+            </div>
+
+            {/* Bottom Navigation with Exact Clean Pill Trackers matching your reference */}
+            <div className="pt-12 border-t border-neutral-200 flex items-center gap-8 sm:gap-12 overflow-x-auto">
+              {SPOTLIGHT_ITEMS.map((tab, idx) => {
+                const active = currentIndex === idx;
+                return (
+                  <button
+                    key={`${tab.id}-${progressKey}`}
+                    onClick={() => handleManualSelect(idx)}
+                    className="group relative text-left cursor-pointer focus:outline-none shrink-0"
+                  >
+                    <span className={`text-xs uppercase tracking-wider transition-colors duration-200 block mb-2.5 ${
+                      active ? "text-neutral-950 font-black" : "text-neutral-400 group-hover:text-neutral-700 font-bold"
+                    }`}>
+                      {tab.tabLabel}
+                    </span>
+
+                    {/* Clean Pill-Shaped Progress Track Line */}
+                    <div className="h-1 w-24 sm:w-28 bg-neutral-200/70 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-neutral-950 rounded-full"
+                        style={{
+                          width: active ? "100%" : "0%",
+                          transition: active ? `width ${DURATION_SECONDS}s linear` : "none"
+                        }}
+                      />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
           </div>
 
         </div>

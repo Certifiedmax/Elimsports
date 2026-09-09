@@ -2,11 +2,21 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { Sparkles, Zap, ShieldCheck } from "lucide-react";
 
 const ANNOUNCEMENTS = [
-  "Elim Sports Kenya: Pro Stringing Lab & Nationwide G4S / Wells Fargo Dispatch",
-  "Free String Labor on All Tournament Rackets Purchased Online This Week",
-  "Official Nairobi Masters & Zetech University Tournament Partner",
+  {
+    text: "Welcome to Elim Sports Kenya — Your Official Tournament Pro Lab",
+    icon: <Sparkles size={13} className="text-blue-400 shrink-0" />,
+  },
+  {
+    text: "Try Our Interactive Racket Finder for Custom Playing Specifications",
+    icon: <Zap size={13} className="text-cyan-400 shrink-0" />,
+  },
+  {
+    text: "Fast Nationwide Dispatch Across Kenya & Physical Store Open in Juja",
+    icon: <ShieldCheck size={13} className="text-emerald-400 shrink-0" />,
+  },
 ];
 
 export default function TopAnnouncementBar() {
@@ -25,21 +35,22 @@ export default function TopAnnouncementBar() {
     return () => clearInterval(interval);
   }, []);
 
+  const currentItem = ANNOUNCEMENTS[currentIndex];
+
   return (
-    <div className="bg-blue-600 text-white text-[11px] sm:text-[12px] py-2 px-6 text-center font-bold uppercase tracking-wider flex items-center justify-between overflow-hidden">
-      <span className="hidden sm:inline select-none text-sm px-3 opacity-75">🏸</span>
+    <div className="bg-neutral-950 text-neutral-200 text-[11px] sm:text-xs py-2.5 px-4 sm:px-6 text-center font-bold uppercase tracking-wider flex items-center justify-center border-b border-neutral-800/80 shadow-inner overflow-hidden select-none">
       
-      <div className="mx-auto truncate">
+      <div className="flex items-center gap-2 truncate max-w-xl sm:max-w-none">
+        {currentItem.icon}
         <span
-          className={`inline-block transition-all duration-300 transform ${
+          className={`inline-block transition-all duration-300 transform truncate ${
             isFading ? "opacity-0 -translate-y-2" : "opacity-100 translate-y-0"
           }`}
         >
-          {ANNOUNCEMENTS[currentIndex]}
+          {currentItem.text}
         </span>
       </div>
 
-      <span className="hidden sm:inline select-none text-sm px-3 opacity-75">🏸</span>
     </div>
   );
 }

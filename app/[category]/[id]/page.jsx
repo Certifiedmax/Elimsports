@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -15,6 +15,15 @@ import {
   ShoppingBag,
   Sparkles,
   Info,
+  CheckCircle,
+  Eye,
+  X,
+  FileText,
+  ChevronDown,
+  Star,
+  Camera,
+  MessageSquarePlus,
+  ImageIcon
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useCart } from "@/app/CartContext";
@@ -29,43 +38,59 @@ export default function ProductDetailPage() {
   const { addToCart } = useCart() || {};
 
   const [product, setProduct] = useState(null);
+  const [allProducts, setAllProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState("");
 
+  // Split-Screen Macro Focus States
+  const imageContainerRef = useRef(null);
+  const [inspectionTarget, setInspectionTarget] = useState(null);
+
+  // Pro Accordion Tab State
+  const [openTab, setOpenTab] = useState("description");
+
+  const toggleTab = (tabName) => {
+    setOpenTab(openTab === tabName ? null : tabName);
+  };
+
+  // Review & Rating States (Supabase Database Persistence)
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewEmail, setReviewEmail] = useState("");
+  const [reviewName, setReviewName] = useState("");
+  const [reviewTitle, setReviewTitle] = useState("");
+  const [reviewBody, setReviewBody] = useState("");
+  const [reviewImages, setReviewImages] = useState([]); // Up to 4 images
+  const [reviewsList, setReviewsList] = useState([]);
+  const [submittingReview, setSubmittingReview] = useState(false);
+
   // Racket stringing & customizer states
   const [selectedWeight, setSelectedWeight] = useState("4U (83g) G5");
-  
-  // FIX: Default to "unstrung" so base price matches catalog view (e.g. KSh 6,500)
   const [stringMode, setStringMode] = useState("unstrung");
   const [selectedString, setSelectedString] = useState("Yonex Exbolt 65 (Crisp Sound & Repulsion) (+KSh1,800)");
-  const [stringCost, setStringCost] = useState(0); // Starts at 0 until custom string is selected
+  const [stringCost, setStringCost] = useState(0); 
   const [tension, setTension] = useState(26);
   
-  // Accessories default to false to prevent price inflation on load
   const [addLogoStencil, setAddLogoStencil] = useState(false);
   const [addSuperGrap, setAddSuperGrap] = useState(false);
 
-  // Apparel & Shoe options
   const [selectedSize, setSelectedSize] = useState("M");
-
   const [quantity, setQuantity] = useState(1);
   const [addedAnimation, setAddedAnimation] = useState(false);
 
   useEffect(() => {
-    async function fetchProduct() {
+    async function fetchProductAndCatalog() {
       if (!rawId) return;
       setLoading(true);
 
       const targetSlug = decodeURIComponent(rawId).trim();
 
-      // Fetch strictly by slug first
       let { data, error } = await supabase
         .from("products")
         .select("*")
         .eq("slug", targetSlug)
         .maybeSingle();
 
-      // UUID fallback if navigated by raw ID
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetSlug);
       if (!data && isUUID) {
         const res = await supabase.from("products").select("*").eq("id", targetSlug).maybeSingle();
@@ -80,20 +105,47 @@ export default function ProductDetailPage() {
             ? data.gallery_images[0]
             : "");
         setActiveImage(primaryImg);
+
+        // Fetch permanent reviews from Supabase for this product
+        const { data: revData } = await supabase
+          .from("reviews")
+          .select("*")
+          .eq("product_id", data.id)
+          .order("created_at", { ascending: false });
+
+        if (revData) {
+          setReviewsList(revData);
+        }
       } else {
         console.error("Product fetch failed:", error);
       }
+
+      const { data: catalogData } = await supabase.from("products").select("*").limit(12);
+      if (catalogData) {
+        setAllProducts(catalogData);
+      }
+
       setLoading(false);
     }
 
-    fetchProduct();
+    fetchProductAndCatalog();
   }, [rawId]);
+
+  const handleImageClick = (e) => {
+    const imgElem = e.currentTarget;
+    const rect = imgElem.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const xPercent = (x / rect.width) * 100;
+    const yPercent = (y / rect.height) * 100;
+    setInspectionTarget({ xPercent, yPercent });
+  };
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <p className="text-xs font-black uppercase tracking-widest text-neutral-400 animate-pulse">
-          Loading tournament spec...
+          Loading equipment specification...
         </p>
       </div>
     );
@@ -116,7 +168,6 @@ export default function ProductDetailPage() {
   const isRacket = category === "rackets";
   const isClothingOrShoes = category === "clothing" || category === "shoes";
 
-  // Dynamic price calculation starting strictly from base database price
   let currentPrice = Number(product.price) || 0;
   if (isRacket) {
     if (stringMode === "custom") currentPrice += stringCost;
@@ -125,11 +176,14 @@ export default function ProductDetailPage() {
   }
 
   const gallery = Array.isArray(product.gallery_images) ? product.gallery_images : [];
+  const relatedProducts = allProducts
+    .filter((p) => p.id !== product.id)
+    .sort(() => 0.5 - Math.random())
+    .slice(0, 4);
 
   const handleStringModeChange = (modeId) => {
     setStringMode(modeId);
     if (modeId === "custom") {
-      // Default to Exbolt 65 fee when switching to custom
       setStringCost(1800);
     } else {
       setStringCost(0);
@@ -145,7 +199,6 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = () => {
     let specs = [];
-
     if (isRacket) {
       specs = [
         `Weight: ${selectedWeight}`,
@@ -166,29 +219,82 @@ export default function ProductDetailPage() {
     if (addToCart) {
       addToCart(
         {
-          id: `${product.id || product.slug}-${selectedWeight}-${stringMode}-${tension}-${selectedSize}`,
+          id: product.id,
           name: product.name,
           brand: product.brand,
           category: product.category || category,
           price: currentPrice,
           image: activeImage,
-          specs,
         },
-        quantity
+        quantity,
+        specs
       );
     }
 
     setAddedAnimation(true);
     setTimeout(() => {
       setAddedAnimation(false);
-      router.push("/cart");
-    }, 350);
+    }, 1500);
   };
 
   const getTensionNote = (t) => {
     if (t <= 23) return "High sweet-spot & arm safety (Beginner/Recreational)";
     if (t <= 27) return "Balanced power & shuttle control (Intermediate/Club)";
     return "Maximum precision & shuttle speed — requires clean technique (Tournament/Advanced)";
+  };
+
+  const handleReviewImageUpload = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length + reviewImages.length > 4) {
+      alert("You can upload a maximum of 4 images.");
+      return;
+    }
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setReviewImages((prev) => [...prev, reader.result]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Permanently save review to Supabase database
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (!reviewEmail || !reviewName || !reviewBody || !reviewTitle) {
+      alert("Please fill in all required review fields.");
+      return;
+    }
+
+    setSubmittingReview(true);
+
+    const payload = {
+      product_id: product.id,
+      name: reviewName,
+      email: reviewEmail,
+      rating: reviewRating,
+      title: reviewTitle,
+      body: reviewBody,
+      images: reviewImages
+    };
+
+    const { data, error } = await supabase.from("reviews").insert([payload]).select().single();
+
+    if (error) {
+      console.error("Error saving review to database:", error);
+      alert("Failed to submit review. Please try again.");
+    } else if (data) {
+      setReviewsList([data, ...reviewsList]);
+      setReviewModalOpen(false);
+      setReviewEmail("");
+      setReviewName("");
+      setReviewTitle("");
+      setReviewBody("");
+      setReviewImages([]);
+      setReviewRating(5);
+    }
+
+    setSubmittingReview(false);
   };
 
   return (
@@ -204,40 +310,96 @@ export default function ProductDetailPage() {
       <div className="max-w-[1720px] mx-auto px-4 sm:px-8 lg:px-12 pt-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
           
-          {/* LEFT: Media Showcase */}
+          {/* LEFT: Full-Sized Media Showcase & Spec Matrix */}
           <div className="lg:col-span-7 space-y-6">
-            <div className="relative aspect-[4/3] w-full bg-[#fbfbfb] rounded-2xl border border-neutral-200/80 flex items-center justify-center p-8 overflow-hidden shadow-inner">
-              {activeImage && activeImage.startsWith("http") ? (
-                <img
-                  src={activeImage}
-                  alt={product.name}
-                  className="w-full h-full object-contain transition-transform duration-300 hover:scale-105"
-                />
-              ) : (
-                <span className="text-9xl select-none">🏸</span>
+            <div className={`grid gap-4 transition-all duration-300 ${inspectionTarget ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"}`}>
+              <div 
+                ref={imageContainerRef}
+                className="relative aspect-[4/3] w-full bg-[#fbfbfb] rounded-2xl border border-neutral-200/80 flex items-center justify-center p-8 overflow-hidden shadow-inner group"
+              >
+                {activeImage && (activeImage.startsWith("http") || activeImage.startsWith("data:")) ? (
+                  <div className="relative w-full h-full flex items-center justify-center">
+                    <img
+                      src={activeImage}
+                      alt={product.name}
+                      onClick={handleImageClick}
+                      className="max-h-full max-w-full object-contain cursor-crosshair select-none"
+                    />
+                    {inspectionTarget && (
+                      <div 
+                        className="absolute w-6 h-6 rounded-full border-2 border-blue-600 bg-blue-500/30 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                        style={{ left: `${inspectionTarget.xPercent}%`, top: `${inspectionTarget.yPercent}%` }}
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-9xl select-none">🏸</span>
+                )}
+                <div className="absolute bottom-4 left-4 bg-neutral-900/90 text-white px-3.5 py-2 rounded-xl backdrop-blur-md pointer-events-none flex items-center gap-2 text-xs font-bold">
+                  <Eye size={15} className="text-blue-400" /> Click anywhere to pop out macro focus view
+                </div>
+              </div>
+
+              {inspectionTarget && (
+                <div className="relative aspect-[4/3] w-full bg-neutral-950 rounded-2xl overflow-hidden flex flex-col justify-between shadow-2xl">
+                  <div className="absolute top-3 right-3 z-20">
+                    <button
+                      type="button"
+                      onClick={() => setInspectionTarget(null)}
+                      className="w-8 h-8 rounded-full bg-neutral-900/80 hover:bg-red-600 text-white flex items-center justify-center transition cursor-pointer backdrop-blur-md shadow-lg"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                  <div className="relative w-full h-full flex items-center justify-center bg-neutral-950">
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        backgroundImage: `url(${activeImage})`,
+                        backgroundRepeat: "no-repeat",
+                        backgroundSize: "400%",
+                        backgroundPosition: `${inspectionTarget.xPercent}% ${inspectionTarget.yPercent}%`,
+                      }}
+                    />
+                  </div>
+                  <div className="absolute bottom-3 left-3 bg-neutral-900/80 text-white px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider backdrop-blur-md pointer-events-none">
+                    Macro Focus Active
+                  </div>
+                </div>
               )}
             </div>
 
             {gallery.length > 0 && (
-              <div className="flex gap-3 overflow-x-auto pb-2">
-                {gallery.map((img, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => setActiveImage(img)}
-                    className={`w-20 h-20 rounded-xl border bg-[#fbfbfb] p-1.5 shrink-0 overflow-hidden transition cursor-pointer ${
-                      activeImage === img
-                        ? "border-blue-600 ring-2 ring-blue-600/20"
-                        : "border-neutral-200 hover:border-neutral-300"
-                    }`}
-                  >
-                    <img src={img} alt={`Angle ${idx + 1}`} className="w-full h-full object-contain" />
-                  </button>
-                ))}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black uppercase tracking-wider text-neutral-700">Studio Angles & Shots</span>
+                  <span className="text-[10px] text-neutral-400 font-bold">Tap to switch view</span>
+                </div>
+                <div className="flex gap-3 overflow-x-auto pb-2">
+                  {gallery.map((img, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        setActiveImage(img);
+                        setInspectionTarget(null);
+                      }}
+                      className={`w-24 h-24 rounded-2xl border bg-[#fbfbfb] p-1.5 shrink-0 overflow-hidden transition cursor-pointer text-left relative group ${
+                        activeImage === img
+                          ? "border-blue-600 ring-2 ring-blue-600/20 bg-blue-50/20"
+                          : "border-neutral-200 hover:border-neutral-300"
+                      }`}
+                    >
+                      <img src={img} alt={`Angle ${idx + 1}`} className="w-full h-full object-contain mb-1 pointer-events-none" />
+                      <span className="absolute bottom-1 right-1 bg-neutral-900/80 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
+                        #{idx + 1}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
-            {/* Spec Matrix */}
             {isRacket && (
               <div className="grid grid-cols-4 gap-2 p-4 bg-[#fcfcfc] rounded-2xl border border-neutral-200 text-center">
                 <div className="flex flex-col items-center">
@@ -262,41 +424,18 @@ export default function ProductDetailPage() {
                 </div>
               </div>
             )}
-
-            {product.description && (
-              <div className="pt-4 border-t border-neutral-100 space-y-2">
-                <h4 className="text-xs font-black uppercase tracking-wider text-neutral-900">Equipment Analysis</h4>
-                <p className="text-xs text-neutral-600 leading-relaxed whitespace-pre-line">{product.description}</p>
-              </div>
-            )}
-
-            {/* Operational Perks */}
-            <div className="grid grid-cols-3 gap-4 pt-4 border-t border-neutral-100 text-xs font-medium text-neutral-600">
-              <div className="flex items-center gap-2">
-                <ShieldCheck size={16} className="text-blue-600 shrink-0" />
-                <span>100% Genuine Authorized Stock</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Truck size={16} className="text-blue-600 shrink-0" />
-                <span>Nationwide Dispatch (G4S / Wells Fargo)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-blue-600 shrink-0" />
-                <span>Nairobi Electronic Stringing Lab</span>
-              </div>
-            </div>
           </div>
 
-          {/* RIGHT: Customizer & Cart Actions */}
+          {/* RIGHT: Price, Accordion, Customizer & Cart Actions */}
           <div className="lg:col-span-5 space-y-8">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-black uppercase tracking-widest text-blue-600">
-                  {product.brand} OFFICIAL
+                  {product.brand || "YONEX"} OFFICIAL
                 </span>
                 <span className="text-neutral-300">•</span>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
-                  Stock Verified
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded flex items-center gap-1">
+                  <CheckCircle size={11} /> Ready to Ship
                 </span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-black text-neutral-950 leading-tight">
@@ -314,10 +453,73 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            {/* RACKET-SPECIFIC STRINGING LAB CUSTOMIZER */}
+            {/* PROFESSIONAL ACCORDION PLACED RIGHT BELOW PRICE */}
+            <div className="border-t border-neutral-200 divide-y divide-neutral-200">
+              <div>
+                <button
+                  type="button"
+                  onClick={() => toggleTab("description")}
+                  className="w-full py-4 flex items-center justify-between text-xs font-black uppercase tracking-wider text-neutral-950 hover:text-blue-600 transition cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <FileText size={16} className="text-blue-600" />
+                    <span>Description & Specifications</span>
+                  </div>
+                  <ChevronDown size={15} className={`transition-transform duration-200 ${openTab === "description" ? "rotate-180" : ""}`} />
+                </button>
+                {openTab === "description" && (
+                  <div className="pb-5 text-xs text-neutral-600 leading-relaxed whitespace-pre-line animate-in fade-in duration-200">
+                    {product.long_description || product.description || "No detailed technical description provided for this item yet."}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <button
+                  type="button"
+                  onClick={() => toggleTab("delivery")}
+                  className="w-full py-4 flex items-center justify-between text-xs font-black uppercase tracking-wider text-neutral-950 hover:text-blue-600 transition cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Truck size={16} className="text-blue-600" />
+                    <span>Delivery & Handling</span>
+                  </div>
+                  <ChevronDown size={15} className={`transition-transform duration-200 ${openTab === "delivery" ? "rotate-180" : ""}`} />
+                </button>
+                {openTab === "delivery" && (
+                  <div className="pb-5 text-xs text-neutral-600 leading-relaxed space-y-2 animate-in fade-in duration-200">
+                    <p>• <strong>Nairobi & Kiambu Same-Day Dispatch:</strong> Orders confirmed before 2:00 PM within Nairobi, Thika, and Kiambu regions are dispatched for prompt same-day or next-morning delivery.</p>
+                    <p>• <strong>Nationwide Courier Security:</strong> Countrywide deliveries across Kenya are securely handled via G4S and Wells Fargo couriers.</p>
+                    <p>• <strong>Tournament Protection Handling:</strong> All professional rackets and sensitive strings undergo rigorous laboratory tension checks and are shipped in rigid, heavy-duty cardboard tubes to guarantee zero frame damage during transit.</p>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <button
+                  type="button"
+                  onClick={() => toggleTab("warranty")}
+                  className="w-full py-4 flex items-center justify-between text-xs font-black uppercase tracking-wider text-neutral-950 hover:text-blue-600 transition cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <ShieldCheck size={16} className="text-blue-600" />
+                    <span>Return & Warranty Policy</span>
+                  </div>
+                  <ChevronDown size={15} className={`transition-transform duration-200 ${openTab === "warranty" ? "rotate-180" : ""}`} />
+                </button>
+                {openTab === "warranty" && (
+                  <div className="pb-5 text-xs text-neutral-600 leading-relaxed space-y-2 animate-in fade-in duration-200">
+                    <p>• <strong>100% Genuine Authorized Stock:</strong> Every racket, shoe, and accessory is verified authentic equipment sourced directly from official professional brand distributors.</p>
+                    <p>• <strong>Manufacturer Structural Warranty:</strong> Frames feature standard tournament manufacturing defect coverage. This excludes accidental racket clashes, court floor scrapes, or string snapping resulting from tension stringing above maximum recommended limits.</p>
+                    <p>• <strong>Inspection & Return Window:</strong> Items may be returned or exchanged within 7 days of delivery, provided products remain unstrung, unplayed, and in pristine factory packaging with original tags intact.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* RACKET CUSTOMIZER */}
             {isRacket && (
               <>
-                {/* 1. Weight / Grip */}
                 <div className="space-y-3">
                   <label className="text-xs font-black uppercase tracking-wider text-neutral-900">
                     1. Select Weight & Grip Size
@@ -340,7 +542,6 @@ export default function ProductDetailPage() {
                   </div>
                 </div>
 
-                {/* 2. Stringing Specification */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-black uppercase tracking-wider text-neutral-900">
@@ -392,7 +593,6 @@ export default function ProductDetailPage() {
                         </select>
                       </div>
 
-                      {/* Calibrated Tension Slider */}
                       <div>
                         <div className="flex justify-between items-center text-xs font-bold text-neutral-800 mb-1">
                           <span>String Tension</span>
@@ -415,7 +615,6 @@ export default function ProductDetailPage() {
                   )}
                 </div>
 
-                {/* 3. Tournament Add-ons */}
                 <div className="space-y-3">
                   <label className="text-xs font-black uppercase tracking-wider text-neutral-900">
                     3. Tournament Accessories
@@ -450,7 +649,6 @@ export default function ProductDetailPage() {
               </>
             )}
 
-            {/* APPAREL / SHOES SIZE SELECTOR */}
             {isClothingOrShoes && (
               <div className="space-y-3">
                 <label className="text-xs font-black uppercase tracking-wider text-neutral-900">
@@ -478,7 +676,6 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Quantity & Add to Cart */}
             <div className="space-y-4 pt-2">
               <div className="flex items-center gap-4">
                 <div className="inline-flex items-center border border-neutral-300 rounded-xl bg-white p-1 shadow-xs">
@@ -514,7 +711,237 @@ export default function ProductDetailPage() {
 
           </div>
         </div>
+
+        {/* ----------------- PERMANENT REVIEW PANEL & LIVE FEED ----------------- */}
+        <div className="mt-24 border-t border-neutral-200 pt-16">
+          <div className="max-w-4xl mx-auto bg-neutral-50 rounded-3xl p-8 sm:p-12 border border-neutral-200/80 space-y-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 block mb-1">Verified Player Community</span>
+                <h3 className="text-2xl font-black uppercase tracking-tight text-neutral-950">Customer Reviews & Ratings</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReviewModalOpen(true)}
+                className="inline-flex items-center gap-2 px-6 py-3.5 bg-neutral-950 hover:bg-blue-600 text-white text-xs font-black uppercase tracking-widest rounded-2xl transition shadow-md cursor-pointer"
+              >
+                <MessageSquarePlus size={16} />
+                <span>Write a Review</span>
+              </button>
+            </div>
+
+            <div className="space-y-4 pt-4">
+              {reviewsList.length === 0 ? (
+                <div className="text-center py-10 bg-white rounded-2xl border border-neutral-200 text-neutral-400 text-xs font-semibold">
+                  No reviews yet. Be the first to review this equipment!
+                </div>
+              ) : (
+                reviewsList.map((rev) => (
+                  <div key={rev.id} className="bg-white p-6 rounded-2xl border border-neutral-200 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="flex text-amber-400">
+                          {[...Array(5)].map((_, i) => (
+                            <Star key={i} size={14} fill={i < rev.rating ? "currentColor" : "none"} />
+                          ))}
+                        </div>
+                        <span className="text-xs font-bold text-neutral-900">{rev.name}</span>
+                        <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Verified Buyer</span>
+                      </div>
+                      <span className="text-[11px] text-neutral-400">
+                        {new Date(rev.created_at || Date.now()).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <h4 className="text-xs font-black uppercase text-neutral-950">{rev.title}</h4>
+                    <p className="text-xs text-neutral-600 leading-relaxed">{rev.body}</p>
+                    
+                    {rev.images && rev.images.length > 0 && (
+                      <div className="flex gap-2 pt-2">
+                        {rev.images.map((imgSrc, imgIdx) => (
+                          <div key={imgIdx} className="w-16 h-16 rounded-xl border border-neutral-200 overflow-hidden bg-neutral-50 p-1">
+                            <img src={imgSrc} alt="User upload" className="w-full h-full object-cover rounded-lg" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ----------------- BORDERLESS COMPACT "YOU MAY ALSO LIKE" SECTION ----------------- */}
+        {relatedProducts.length > 0 && (
+          <div className="mt-24 space-y-6">
+            <div className="text-center space-y-1">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 block">Complete Your Setup</span>
+              <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-neutral-950">You May Also Like</h2>
+            </div>
+
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {relatedProducts.map((item) => {
+                const itemImg = item.image_url || (item.gallery_images?.[0] ?? "");
+                const itemPrice = Number(item.price) || 0;
+                const itemTargetCategory = (item.category || "rackets").toLowerCase().trim();
+
+                return (
+                  <div key={item.id} className="group bg-neutral-50/50 hover:bg-white rounded-2xl p-4 border border-transparent hover:border-neutral-200 transition-all duration-300 flex flex-col justify-between">
+                    <Link href={`/${itemTargetCategory}/${item.slug}`} className="relative aspect-square w-full bg-[#f4f4f4] rounded-xl flex items-center justify-center p-3 mb-3 overflow-hidden">
+                      {itemImg && String(itemImg).startsWith("http") ? (
+                        <img src={itemImg} alt={item.name} className="w-full h-full object-contain group-hover:scale-110 transition duration-500 ease-out" />
+                      ) : (
+                        <span className="text-4xl select-none">🏸</span>
+                      )}
+                    </Link>
+                    <div className="space-y-1 mb-3">
+                      <span className="text-[8px] font-black uppercase tracking-widest text-blue-600">{item.brand || "OFFICIAL"}</span>
+                      <Link href={`/${itemTargetCategory}/${item.slug}`}>
+                        <h4 className="text-[11px] font-black text-neutral-900 group-hover:text-blue-600 transition line-clamp-1">{item.name}</h4>
+                      </Link>
+                    </div>
+                    <div className="flex items-center justify-between pt-2 border-t border-neutral-100">
+                      <span className="text-xs font-black text-neutral-950">KSh {itemPrice.toLocaleString()}</span>
+                      <Link href={`/${itemTargetCategory}/${item.slug}`} className="w-7 h-7 rounded-lg bg-neutral-900 hover:bg-blue-600 text-white flex items-center justify-center transition">
+                        <ArrowLeft size={11} className="rotate-180" />
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* ----------------- REVIEW MODAL WITH 4-IMAGE UPLOAD ----------------- */}
+      {reviewModalOpen && (
+        <div className="fixed inset-0 z-50 bg-neutral-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-white rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200 relative max-h-[90vh] overflow-y-auto">
+            <button
+              type="button"
+              onClick={() => setReviewModalOpen(false)}
+              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-700 hover:bg-neutral-200 transition cursor-pointer"
+            >
+              <X size={16} />
+            </button>
+
+            <form onSubmit={handleReviewSubmit} className="space-y-6">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 block">Verified Purchase Feedback</span>
+                <h3 className="text-xl font-black uppercase text-neutral-950">Review {product.name}</h3>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex flex-col items-center gap-2 py-2">
+                  <span className="text-xs font-bold text-neutral-700">Tap to Rate</span>
+                  <div className="flex items-center gap-2 text-amber-400">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setReviewRating(star)}
+                        className="hover:scale-110 transition cursor-pointer"
+                      >
+                        <Star size={32} fill={star <= reviewRating ? "currentColor" : "none"} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-neutral-700">Your Email * (Verification)</label>
+                  <input
+                    type="email"
+                    required
+                    value={reviewEmail}
+                    onChange={(e) => setReviewEmail(e.target.value)}
+                    placeholder="player@example.com"
+                    className="w-full p-3 text-xs font-semibold bg-neutral-50 border border-neutral-300 rounded-xl focus:outline-none focus:border-blue-600"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-neutral-700">Display Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={reviewName}
+                    onChange={(e) => setReviewName(e.target.value)}
+                    placeholder="e.g. Kevin M."
+                    className="w-full p-3 text-xs font-semibold bg-neutral-50 border border-neutral-300 rounded-xl focus:outline-none focus:border-blue-600"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-neutral-700">Review Headline *</label>
+                  <input
+                    type="text"
+                    required
+                    value={reviewTitle}
+                    onChange={(e) => setReviewTitle(e.target.value)}
+                    placeholder="e.g. Incredible smash power & control"
+                    className="w-full p-3 text-xs font-semibold bg-neutral-50 border border-neutral-300 rounded-xl focus:outline-none focus:border-blue-600"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-neutral-700">Your Review *</label>
+                  <textarea
+                    rows="3"
+                    required
+                    value={reviewBody}
+                    onChange={(e) => setReviewBody(e.target.value)}
+                    placeholder="What would you tell your fellow players about this racket?"
+                    className="w-full p-3 text-xs font-semibold bg-neutral-50 border border-neutral-300 rounded-xl focus:outline-none focus:border-blue-600"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold text-neutral-700 flex items-center gap-1.5">
+                    <ImageIcon size={14} className="text-blue-600" /> Upload Photos (Up to 4 images)
+                  </label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {reviewImages.map((imgSrc, idx) => (
+                      <div key={idx} className="relative aspect-square rounded-xl border border-neutral-200 overflow-hidden bg-neutral-50 p-1">
+                        <img src={imgSrc} alt="Upload preview" className="w-full h-full object-cover rounded-lg" />
+                        <button
+                          type="button"
+                          onClick={() => setReviewImages(reviewImages.filter((_, i) => i !== idx))}
+                          className="absolute inset-0 bg-red-600/90 text-white opacity-0 hover:opacity-100 transition flex items-center justify-center text-[10px] font-bold"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                    {reviewImages.length < 4 && (
+                      <label className="aspect-square rounded-xl border-2 border-dashed border-neutral-300 hover:border-blue-600 flex flex-col items-center justify-center cursor-pointer text-neutral-400 hover:text-blue-600 transition bg-neutral-50">
+                        <Camera size={18} />
+                        <span className="text-[9px] font-bold mt-1">Add Photo</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          className="hidden"
+                          onChange={handleReviewImageUpload}
+                        />
+                      </label>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submittingReview}
+                  className="w-full py-4 bg-neutral-950 hover:bg-blue-600 text-white font-black text-xs uppercase tracking-widest rounded-xl transition cursor-pointer shadow-md disabled:opacity-50"
+                >
+                  {submittingReview ? "Submitting..." : "Submit Verified Review"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

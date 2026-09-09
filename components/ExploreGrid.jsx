@@ -26,7 +26,7 @@ const TOP_CATEGORIES = [
 
 const BOTTOM_CATEGORIES = [
   {
-    name: "TEAMWEAR",
+    name: "CLOTHING",
     href: "/clothing",
     bgGradient: "bg-gradient-to-b from-[#fee2e2] to-[#fecaca]",
     imageSrc: "/images/clothing_200x.avif",

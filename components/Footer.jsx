@@ -20,10 +20,13 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-[#0c0c0e] text-neutral-300 border-t border-neutral-900 select-none">
+    <footer className="relative bg-[#0c0c0e] text-neutral-300 border-t border-neutral-800/60 select-none overflow-hidden">
       
+      {/* Subtle Top Glow / Gradient Transition Buffer */}
+      <div className="absolute top-0 inset-x-0 h-12 bg-gradient-to-b from-neutral-900/40 to-transparent pointer-events-none" />
+
       {/* 1. TOP STRIP: Trust & Quick Inquiry Bar */}
-      <div className="border-b border-neutral-800/80 bg-neutral-950/60">
+      <div className="border-b border-neutral-800/80 bg-neutral-950/80 backdrop-blur-md">
         <div className="max-w-[1720px] mx-auto px-6 sm:px-10 lg:px-14 py-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
             
@@ -166,7 +169,7 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/shop?category=accessories" className="hover:text-white transition flex items-center gap-1 group">
+                <Link href="/strings-accessories" className="hover:text-white transition flex items-center gap-1 group">
                   <ChevronRight size={12} className="text-neutral-600 group-hover:text-blue-400 transition-transform group-hover:translate-x-0.5" />
                   <span>Grips & Strings</span>
                 </Link>
@@ -247,7 +250,7 @@ export default function Footer() {
               </ul>
             </div>
 
-            {/* Integrated PartnerPerks Payment Block */}
+            {/* Integrated Payment Block */}
             <div className="pt-4 border-t border-neutral-900 space-y-3">
               <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 flex items-center gap-1.5">
                 <CreditCard size={13} className="text-emerald-400" />

@@ -1,418 +1,638 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, Sparkles, Image as ImageIcon, ShieldCheck, Zap, Package, RefreshCcw } from "lucide-react";
+import {
+  Package,
+  PlusCircle,
+  Edit3,
+  Trash2,
+  Save,
+  X,
+  CheckCircle2,
+  AlertCircle,
+  Search,
+  ShieldCheck,
+  Camera,
+  Image as ImageIcon,
+  Link as LinkIcon,
+  FileText
+} from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
-export default function AdminAddProduct() {
+export default function AdminDashboardPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
 
-  const [form, setForm] = useState({
-    name: "",
-    brand: "YONEX",
-    category: "rackets",
-    price: "",
-    original_price: "",
-    weight: "88g",
-    balance: "Head Heavy",
-    player_level: "Advanced",
-    description: "",
-    gallery_1: "",
-    gallery_2: "",
-    gallery_3: "",
-    gallery_4: "",
-    gallery_5: "",
-    in_stock: true,
-  });
+  // Inventory & Form States
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("all"); // 'all', 'rackets', 'shoes', 'clothing', 'shuttles'
 
+  // Modal / Editor State
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentProduct, setCurrentProduct] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState({ type: "", message: "" });
+  const [urlInput, setUrlInput] = useState("");
+
+  // Fetch Inventory on Mount
+  useEffect(() => {
+    fetchInventory();
+  }, []);
+
+  async function fetchInventory() {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Failed to fetch inventory:", error);
+      setFeedback({ type: "error", message: "Failed to load store inventory." });
+    } else {
+      setProducts(data || []);
+    }
+    setLoading(false);
+  }
+
+  // Handle Input Changes in Editor
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm((prev) => ({
+    setCurrentProduct((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
   };
 
-  // Pro Feature: Quick Preset Filler for Rapid Testing
-  const fillPreset = () => {
-    setForm({
-      name: "Yonex Astrox 100 ZZ Kurenai",
-      brand: "YONEX",
-      category: "rackets",
-      price: "28500",
-      original_price: "32000",
-      weight: "4U (Ave. 83g)",
-      balance: "Head Heavy",
-      player_level: "Professional / Advanced",
-      description: "Built for explosive rotational power and pinpoint control. Features Namd graphite and the innovative Rotational Generator System.",
-      gallery_1: "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=800&auto=format&fit=crop",
-      gallery_2: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?q=80&w=800&auto=format&fit=crop",
-      gallery_3: "",
-      gallery_4: "",
-      gallery_5: "",
-      in_stock: true,
-    });
-    setMsg("Loaded Yonex Astrox preset configuration.");
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setMsg("");
-
-    const baseSlug = form.name
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
-    const generatedSlug = `${baseSlug}-${Date.now().toString().slice(-4)}`;
-
-    const gallery = [
-      form.gallery_1,
-      form.gallery_2,
-      form.gallery_3,
-      form.gallery_4,
-      form.gallery_5,
-    ]
-      .map((url) => (url ? url.trim() : ""))
-      .filter((url) => url.startsWith("http"));
-
-    const payload = {
-      name: form.name.trim(),
-      slug: generatedSlug,
-      brand: form.brand.toUpperCase(),
-      category: form.category.toLowerCase().trim(),
-      price: Number(form.price),
-      original_price: form.original_price ? Number(form.original_price) : null,
-      weight: form.weight.trim(),
-      balance: form.balance.trim(),
-      player_level: form.player_level.trim(),
-      description: form.description.trim(),
-      image_url: gallery[0] || "",
-      gallery_images: gallery,
-      in_stock: form.in_stock,
-    };
-
-    const { error } = await supabase.from("products").insert([payload]);
-
-    if (error) {
-      console.error("Supabase insert error:", error);
-      alert(`Database error: ${error.message}`);
+  // Open Editor for Create or Update
+  const handleOpenEditor = (product = null) => {
+    if (product) {
+      setCurrentProduct({ ...product });
     } else {
-      setMsg("Product published successfully! Redirecting to storefront...");
-      setTimeout(() => {
-        router.push(`/${payload.category}`);
-      }, 1200);
+      setCurrentProduct({
+        name: "",
+        brand: "YONEX",
+        category: "rackets",
+        price: "",
+        original_price: "",
+        stock_status: "In Stock",
+        weight: "4U (83g) G5",
+        balance: "Head Heavy",
+        player_level: "Advanced",
+        max_tension: 30,
+        image_url: "",
+        gallery_images: [],
+        description: "",
+        long_description: "",
+      });
     }
-    setLoading(false);
+    setIsEditing(true);
+    setUrlInput("");
+    setFeedback({ type: "", message: "" });
   };
 
-  const activeGallery = [form.gallery_1, form.gallery_2, form.gallery_3, form.gallery_4, form.gallery_5].filter(
-    (url) => url && url.startsWith("http")
-  );
+  // Helper to append image to gallery
+  const addImageToGallery = (dataOrUrl) => {
+    const currentGallery = Array.isArray(currentProduct.gallery_images) ? currentProduct.gallery_images : [];
+    setCurrentProduct(prev => ({
+      ...prev,
+      gallery_images: [...currentGallery, dataOrUrl],
+      image_url: prev.image_url || dataOrUrl
+    }));
+  };
+
+  // Save Product to Supabase with strict payload mapping
+  const handleSaveProduct = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setFeedback({ type: "", message: "" });
+
+    try {
+      const payload = {
+        name: currentProduct.name,
+        brand: currentProduct.brand || "YONEX",
+        category: currentProduct.category || "rackets",
+        price: Number(currentProduct.price) || 0,
+        original_price: currentProduct.original_price ? Number(currentProduct.original_price) : null,
+        weight: currentProduct.weight || null,
+        balance: currentProduct.balance || null,
+        player_level: currentProduct.player_level || null,
+        max_tension: Number(currentProduct.max_tension) || 30,
+        image_url: currentProduct.image_url || "",
+        gallery_images: Array.isArray(currentProduct.gallery_images) ? currentProduct.gallery_images : [],
+        description: currentProduct.description || "",
+        long_description: currentProduct.long_description || "",
+        slug: currentProduct.slug || currentProduct.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
+      };
+
+      let error;
+      if (currentProduct.id) {
+        const res = await supabase
+          .from("products")
+          .update(payload)
+          .eq("id", currentProduct.id);
+        error = res.error;
+      } else {
+        const res = await supabase.from("products").insert([payload]);
+        error = res.error;
+      }
+
+      if (error) throw error;
+
+      setFeedback({ type: "success", message: "Inventory updated successfully!" });
+      fetchInventory();
+      setTimeout(() => {
+        setIsEditing(false);
+        setFeedback({ type: "", message: "" });
+      }, 1000);
+    } catch (err) {
+      console.error("Full Save Error:", err);
+      setFeedback({ 
+        type: "error", 
+        message: err?.message || err?.details || "Failed to save product. Check database columns." 
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Delete Product
+  const handleDeleteProduct = async (id, name) => {
+    if (!window.confirm(`Are you sure you want to remove "${name}" from Elim Sports inventory?`)) return;
+
+    const { error } = await supabase.from("products").delete().eq("id", id);
+    if (error) {
+      alert("Failed to delete product: " + error.message);
+    } else {
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+    }
+  };
+
+  const filteredProducts = products.filter((p) => {
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          (p.brand && p.brand.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesTab = activeTab === "all" || (p.category && p.category.toLowerCase() === activeTab);
+    return matchesSearch && matchesTab;
+  });
 
   return (
-    <div className="min-h-screen bg-[#0c0c0e] text-neutral-200 pb-24 select-none">
+    <div className="min-h-screen bg-[#fafafa] text-neutral-900 pb-32">
       
-      {/* Top Navigation & Status Bar */}
-      <header className="bg-neutral-950/80 backdrop-blur-md border-b border-neutral-900 py-5 px-6 sm:px-10 sticky top-0 z-30">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/"
-              className="w-9 h-9 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-center text-neutral-400 hover:text-white hover:border-neutral-700 transition"
-            >
-              <ArrowLeft size={16} />
-            </Link>
-            <div>
-              <h1 className="text-xs font-black uppercase tracking-widest text-white">
-                Elim Sports Command Center
-              </h1>
-              <p className="text-[10px] text-neutral-500 font-medium">
-                Juja Operations & Inventory Management
-              </p>
+      {/* 1. Pro-Lab Admin Header */}
+      <div className="bg-neutral-950 text-white border-b border-neutral-900 py-12 px-6 sm:px-10 lg:px-16 relative overflow-hidden">
+        <div className="absolute inset-y-0 right-0 w-1/3 bg-gradient-to-l from-blue-600/10 to-transparent pointer-events-none" />
+        <div className="max-w-[1720px] mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-widest bg-blue-950 text-blue-400 border border-blue-800/80 mb-2">
+              <ShieldCheck size={13} /> Elim Sports Master Control
             </div>
+            <h1 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-white">
+              Inventory Command Center
+            </h1>
+            <p className="text-xs sm:text-sm text-neutral-400 mt-1">
+              Manage tournament stock levels, pricing configurations, and pro-lab racket specs in real-time.
+            </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={fillPreset}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[11px] font-black uppercase tracking-wider hover:bg-blue-500/20 transition"
-            >
-              <Zap size={13} />
-              <span>Load Preset</span>
-            </button>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-black uppercase tracking-wider">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Supabase Live
-            </span>
+          <button
+            type="button"
+            onClick={() => handleOpenEditor()}
+            className="inline-flex items-center justify-center gap-2 px-6 py-4 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-widest rounded-2xl transition shadow-lg shadow-blue-600/30 cursor-pointer shrink-0"
+          >
+            <PlusCircle size={16} />
+            <span>Add New Equipment</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 2. Control Toolbar */}
+      <div className="max-w-[1720px] mx-auto px-6 sm:px-10 lg:px-16 pt-8">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-neutral-200/80 shadow-sm">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 lg:pb-0">
+            {["all", "rackets", "shoes", "clothing", "shuttles"].map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition cursor-pointer shrink-0 ${
+                  activeTab === tab
+                    ? "bg-neutral-950 text-white"
+                    : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          <div className="relative w-full lg:w-80">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
+            <input
+              type="text"
+              placeholder="Search gear name or brand..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 text-xs font-semibold bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-none focus:border-blue-600"
+            />
           </div>
         </div>
-      </header>
+      </div>
 
-      {/* Main Admin Form Container */}
-      <main className="max-w-5xl mx-auto px-6 pt-12">
-        <div className="bg-neutral-900/60 rounded-3xl border border-neutral-800 p-8 sm:p-12 shadow-2xl relative overflow-hidden">
-          
-          {/* Header Action Row */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-neutral-800">
-            <div>
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500 block mb-1">
-                Database Writer
-              </span>
-              <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-white">
-                Publish New Equipment Item
-              </h2>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-neutral-400 font-medium">Storefront Destination:</span>
-              <span className="text-xs font-mono font-bold text-white px-2.5 py-1 rounded-lg bg-neutral-800 border border-neutral-700">
-                /{form.category}
-              </span>
+      {/* 3. Inventory Table */}
+      <div className="max-w-[1720px] mx-auto px-6 sm:px-10 lg:px-16 pt-8">
+        {loading ? (
+          <div className="py-24 text-center">
+            <p className="text-xs font-black uppercase tracking-widest text-neutral-400 animate-pulse">
+              Synchronizing with Supabase Database...
+            </p>
+          </div>
+        ) : filteredProducts.length === 0 ? (
+          <div className="bg-white rounded-3xl border border-neutral-200/80 p-16 text-center space-y-4">
+            <Package size={40} className="mx-auto text-neutral-300" />
+            <h3 className="text-lg font-black uppercase text-neutral-900">No Equipment Found</h3>
+            <p className="text-xs text-neutral-500">No inventory matches your active filter or search query.</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-3xl border border-neutral-200/80 overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-neutral-50 border-b border-neutral-200 text-[10px] font-black uppercase tracking-widest text-neutral-500">
+                    <th className="py-4 px-6">Equipment</th>
+                    <th className="py-4 px-6">Category</th>
+                    <th className="py-4 px-6">Base Price</th>
+                    <th className="py-4 px-6">Specs / Weight</th>
+                    <th className="py-4 px-6 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-100 text-xs">
+                  {filteredProducts.map((item) => {
+                    const img = item.image_url || (item.gallery_images?.[0] ?? "");
+                    return (
+                      <tr key={item.id} className="hover:bg-[#fafafa] transition group">
+                        <td className="py-4 px-6 flex items-center gap-4">
+                          <div className="w-12 h-12 bg-[#fcfcfc] rounded-xl border border-neutral-200 flex items-center justify-center p-1 shrink-0 overflow-hidden">
+                            {img ? (
+                              <img src={img} alt={item.name} className="w-full h-full object-contain" />
+                            ) : (
+                              <span>🏸</span>
+                            )}
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 block">
+                              {item.brand || "YONEX"}
+                            </span>
+                            <span className="font-black text-neutral-950 block">{item.name}</span>
+                          </div>
+                        </td>
+                        <td className="py-4 px-6 font-bold uppercase tracking-wider text-neutral-600">
+                          {item.category || "rackets"}
+                        </td>
+                        <td className="py-4 px-6 font-black text-red-600">
+                          KSh {Number(item.price || 0).toLocaleString()}.00
+                        </td>
+                        <td className="py-4 px-6 font-semibold text-neutral-500">
+                          {item.weight || item.player_level || "Standard Spec"}
+                        </td>
+                        <td className="py-4 px-6 text-right">
+                          <div className="inline-flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditor(item)}
+                              className="p-2 rounded-xl bg-neutral-100 hover:bg-blue-600 hover:text-white text-neutral-700 transition cursor-pointer"
+                              title="Edit Product"
+                            >
+                              <Edit3 size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteProduct(item.id, item.name)}
+                              className="p-2 rounded-xl bg-neutral-100 hover:bg-red-600 hover:text-white text-neutral-700 transition cursor-pointer"
+                              title="Delete Product"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
+        )}
+      </div>
 
-          {msg && (
-            <div className="mb-8 p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center gap-2.5">
-              <Sparkles size={16} /> {msg}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-8">
+      {/* 4. Slide-over Editor Modal with Extended Pro Fields */}
+      {isEditing && currentProduct && (
+        <div className="fixed inset-0 z-50 bg-neutral-950/80 backdrop-blur-sm flex justify-end">
+          <div className="w-full max-w-2xl bg-white h-full overflow-y-auto p-6 sm:p-10 space-y-8 shadow-2xl animate-in slide-in-from-right duration-300">
             
-            {/* Section 1: Core Details */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-black uppercase tracking-widest text-neutral-400 flex items-center gap-2">
-                <Package size={14} className="text-blue-400" />
-                <span>1. Core Product Information</span>
-              </h3>
+            <div className="flex items-center justify-between pb-6 border-b border-neutral-200">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 block">
+                  Elim Sports Database Editor
+                </span>
+                <h2 className="text-xl font-black uppercase tracking-tight text-neutral-950">
+                  {currentProduct.id ? "Edit Equipment Specification" : "Register New Equipment"}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-700 hover:bg-neutral-200 transition cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div className="sm:col-span-2 space-y-1.5">
-                  <label className="text-[11px] font-black uppercase tracking-wider text-neutral-300">Product Full Name *</label>
+            {feedback.message && (
+              <div className={`p-4 rounded-xl text-xs font-bold flex items-center gap-2 ${
+                feedback.type === "success" ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-red-50 text-red-800 border border-red-200"
+              }`}>
+                {feedback.type === "success" ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+                <span>{feedback.message}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveProduct} className="space-y-6">
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black uppercase tracking-wider text-neutral-700">Product Name *</label>
                   <input
                     type="text"
                     name="name"
                     required
-                    value={form.name}
+                    value={currentProduct.name || ""}
                     onChange={handleChange}
-                    placeholder="e.g. Yonex Astrox 100 ZZ Kurenai"
-                    className="w-full p-3.5 text-xs font-medium bg-neutral-950 border border-neutral-800 rounded-xl text-white placeholder:text-neutral-600 focus:outline-none focus:border-blue-500 transition"
+                    placeholder="e.g. Yonex Astrox 100 ZZ"
+                    className="w-full p-3 text-xs font-semibold bg-neutral-50 border border-neutral-300 rounded-xl focus:outline-none focus:border-blue-600"
                   />
                 </div>
-
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-black uppercase tracking-wider text-neutral-300">Category *</label>
+                  <label className="text-[11px] font-black uppercase tracking-wider text-neutral-700">Brand *</label>
+                  <input
+                    type="text"
+                    name="brand"
+                    required
+                    value={currentProduct.brand || ""}
+                    onChange={handleChange}
+                    placeholder="e.g. YONEX"
+                    className="w-full p-3 text-xs font-semibold bg-neutral-50 border border-neutral-300 rounded-xl focus:outline-none focus:border-blue-600"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black uppercase tracking-wider text-neutral-700">Category *</label>
                   <select
                     name="category"
-                    value={form.category}
+                    value={currentProduct.category || "rackets"}
                     onChange={handleChange}
-                    className="w-full p-3.5 text-xs font-medium bg-neutral-950 border border-neutral-800 rounded-xl text-white focus:outline-none focus:border-blue-500 transition cursor-pointer"
+                    className="w-full p-3 text-xs font-semibold bg-neutral-50 border border-neutral-300 rounded-xl focus:outline-none focus:border-blue-600 cursor-pointer"
                   >
-                    <option value="rackets">Tournament Rackets</option>
-                    <option value="shoes">Court Shoes</option>
-                    <option value="bags">Kit & Thermal Bags</option>
-                    <option value="shuttles">Feather Shuttles</option>
-                    <option value="clothing">Team Apparel</option>
+                    <option value="rackets">Rackets</option>
+                    <option value="shoes">Shoes</option>
+                    <option value="clothing">Clothing</option>
+                    <option value="shuttles">Shuttles</option>
                   </select>
                 </div>
-
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-black uppercase tracking-wider text-neutral-300">Brand *</label>
-                  <select
-                    name="brand"
-                    value={form.brand}
-                    onChange={handleChange}
-                    className="w-full p-3.5 text-xs font-medium bg-neutral-950 border border-neutral-800 rounded-xl text-white focus:outline-none focus:border-blue-500 transition cursor-pointer"
-                  >
-                    <option value="YONEX">Yonex Japan</option>
-                    <option value="VICTOR">Victor Taiwan</option>
-                    <option value="LI-NING">Li-Ning Competition</option>
-                    <option value="HUNDRED">Hundred</option>
-                    <option value="ASHAWAY">Ashaway USA</option>
-                    <option value="RSL">RSL Shuttles</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black uppercase tracking-wider text-neutral-300">Selling Price (KSh) *</label>
+                  <label className="text-[11px] font-black uppercase tracking-wider text-neutral-700">Selling Price (KSh) *</label>
                   <input
                     type="number"
                     name="price"
                     required
-                    value={form.price}
+                    value={currentProduct.price || ""}
                     onChange={handleChange}
-                    placeholder="25000"
-                    className="w-full p-3.5 text-xs font-medium bg-neutral-950 border border-neutral-800 rounded-xl text-white placeholder:text-neutral-600 focus:outline-none focus:border-blue-500 transition font-mono"
+                    placeholder="6500"
+                    className="w-full p-3 text-xs font-semibold bg-neutral-50 border border-neutral-300 rounded-xl focus:outline-none focus:border-blue-600"
                   />
                 </div>
-
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-black uppercase tracking-wider text-neutral-300">Original / Strike-through Price (KSh)</label>
+                  <label className="text-[11px] font-black uppercase tracking-wider text-neutral-700">Original Price (KSh)</label>
                   <input
                     type="number"
                     name="original_price"
-                    value={form.original_price}
+                    value={currentProduct.original_price || ""}
                     onChange={handleChange}
-                    placeholder="29000 (Optional)"
-                    className="w-full p-3.5 text-xs font-medium bg-neutral-950 border border-neutral-800 rounded-xl text-white placeholder:text-neutral-600 focus:outline-none focus:border-blue-500 transition font-mono"
+                    placeholder="8300"
+                    className="w-full p-3 text-xs font-semibold bg-neutral-50 border border-neutral-300 rounded-xl focus:outline-none focus:border-blue-600"
                   />
                 </div>
               </div>
-            </div>
 
-            {/* Section 2: Technical Specs */}
-            <div className="space-y-4 pt-6 border-t border-neutral-800">
-              <h3 className="text-xs font-black uppercase tracking-widest text-neutral-400 flex items-center gap-2">
-                <ShieldCheck size={14} className="text-emerald-400" />
-                <span>2. Specifications & Lab Metrics</span>
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-black uppercase tracking-wider text-neutral-300">Weight / Grip</label>
+                  <label className="text-[11px] font-black uppercase tracking-wider text-neutral-700">Weight Spec</label>
                   <input
                     type="text"
                     name="weight"
-                    value={form.weight}
+                    value={currentProduct.weight || ""}
                     onChange={handleChange}
-                    placeholder="e.g. 4U (Ave. 83g)"
-                    className="w-full p-3.5 text-xs font-medium bg-neutral-950 border border-neutral-800 rounded-xl text-white placeholder:text-neutral-600 focus:outline-none focus:border-blue-500 transition"
+                    placeholder="4U (83g) G5"
+                    className="w-full p-3 text-xs font-semibold bg-neutral-50 border border-neutral-300 rounded-xl focus:outline-none focus:border-blue-600"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-black uppercase tracking-wider text-neutral-300">Balance Profile</label>
+                  <label className="text-[11px] font-black uppercase tracking-wider text-neutral-700">Balance</label>
                   <input
                     type="text"
                     name="balance"
-                    value={form.balance}
+                    value={currentProduct.balance || ""}
                     onChange={handleChange}
-                    placeholder="e.g. Head Heavy"
-                    className="w-full p-3.5 text-xs font-medium bg-neutral-950 border border-neutral-800 rounded-xl text-white placeholder:text-neutral-600 focus:outline-none focus:border-blue-500 transition"
+                    placeholder="Head Heavy"
+                    className="w-full p-3 text-xs font-semibold bg-neutral-50 border border-neutral-300 rounded-xl focus:outline-none focus:border-blue-600"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-black uppercase tracking-wider text-neutral-300">Target Player Level</label>
+                  <label className="text-[11px] font-black uppercase tracking-wider text-neutral-700">Player Level</label>
                   <input
                     type="text"
                     name="player_level"
-                    value={form.player_level}
+                    value={currentProduct.player_level || ""}
                     onChange={handleChange}
-                    placeholder="e.g. Advanced / Pro"
-                    className="w-full p-3.5 text-xs font-medium bg-neutral-950 border border-neutral-800 rounded-xl text-white placeholder:text-neutral-600 focus:outline-none focus:border-blue-500 transition"
+                    placeholder="Advanced / Tournament"
+                    className="w-full p-3 text-xs font-semibold bg-neutral-50 border border-neutral-300 rounded-xl focus:outline-none focus:border-blue-600"
                   />
                 </div>
               </div>
 
-              <div className="space-y-1.5 pt-2">
-                <label className="text-[11px] font-black uppercase tracking-wider text-neutral-300">Technical Overview & Description</label>
-                <textarea
-                  rows={4}
-                  name="description"
-                  value={form.description}
-                  onChange={handleChange}
-                  placeholder="Detail string tension limits, frame technology, or material composition..."
-                  className="w-full p-4 text-xs font-medium bg-neutral-950 border border-neutral-800 rounded-xl text-white placeholder:text-neutral-600 focus:outline-none focus:border-blue-500 transition resize-none leading-relaxed"
-                />
-              </div>
-            </div>
+              {/* Multi-Angle Verification & Image Capture Suite */}
+              <div className="space-y-4 p-4 bg-neutral-50 rounded-2xl border border-neutral-200">
+                <h4 className="text-xs font-black uppercase tracking-wider text-neutral-900 flex items-center gap-1.5">
+                  <ImageIcon size={14} className="text-blue-600" /> Equipment Verification & Angles Studio
+                </h4>
 
-            {/* Section 3: Gallery & Live Preview */}
-            <div className="space-y-4 pt-6 border-t border-neutral-800">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-black uppercase tracking-widest text-neutral-400 flex items-center gap-2">
-                  <ImageIcon size={14} className="text-blue-400" />
-                  <span>3. Gallery Assets (Up to 5 URLs)</span>
-                </h3>
-                <span className="text-[10px] text-neutral-500 font-mono">
-                  {activeGallery.length} active image(s) detected
-                </span>
-              </div>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-neutral-700">Primary Catalog Image URL *</label>
+                  <input
+                    type="url"
+                    name="image_url"
+                    required
+                    value={currentProduct.image_url || ""}
+                    onChange={handleChange}
+                    placeholder="https://images.unsplash.com/..."
+                    className="w-full p-3 text-xs font-semibold bg-white border border-neutral-300 rounded-xl focus:outline-none focus:border-blue-600"
+                  />
+                </div>
 
-              <div className="space-y-3">
-                {[1, 2, 3, 4, 5].map((idx) => (
-                  <div key={idx} className="flex items-center gap-3">
-                    <span className="w-6 text-[10px] font-black text-neutral-600 text-right">0{idx}</span>
+                <div className="space-y-3 pt-2 border-t border-neutral-200">
+                  <label className="text-[11px] font-bold text-neutral-700 block">Add Verification Angle / Close-up</label>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <label className="py-3 px-4 bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold uppercase rounded-xl transition cursor-pointer flex items-center justify-center gap-2">
+                      <Camera size={15} className="text-blue-400" />
+                      <span>Capture Photo</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => addImageToGallery(reader.result);
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+
+                    <label className="py-3 px-4 bg-white hover:bg-neutral-100 border border-neutral-300 text-neutral-800 text-xs font-bold uppercase rounded-xl transition cursor-pointer flex items-center justify-center gap-2">
+                      <ImageIcon size={15} className="text-blue-600" />
+                      <span>Add from Gallery</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => addImageToGallery(reader.result);
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="flex gap-2 pt-1">
                     <input
                       type="url"
-                      name={`gallery_${idx}`}
-                      value={form[`gallery_${idx}`]}
-                      onChange={handleChange}
-                      placeholder={`https://images.unsplash.com/... or Pinterest URL`}
-                      className="w-full p-3 text-xs font-mono bg-neutral-950 border border-neutral-800 rounded-xl text-white placeholder:text-neutral-700 focus:outline-none focus:border-blue-500 transition"
+                      value={urlInput}
+                      onChange={(e) => setUrlInput(e.target.value)}
+                      placeholder="Or paste image URL here..."
+                      className="flex-1 p-2.5 text-xs font-semibold bg-white border border-neutral-300 rounded-xl focus:outline-none focus:border-blue-600"
                     />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (urlInput.trim()) {
+                          addImageToGallery(urlInput.trim());
+                          setUrlInput("");
+                        }
+                      }}
+                      className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase rounded-xl transition cursor-pointer flex items-center gap-1.5 shrink-0"
+                    >
+                      <LinkIcon size={14} />
+                      <span>Add URL</span>
+                    </button>
                   </div>
-                ))}
-              </div>
 
-              {/* Live Image Thumbnails Preview */}
-              {activeGallery.length > 0 && (
-                <div className="pt-4 space-y-2">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 block">
-                    Asset Preview Matrix
-                  </span>
-                  <div className="grid grid-cols-5 gap-3">
-                    {activeGallery.map((url, i) => (
-                      <div key={i} className="relative aspect-square rounded-xl bg-neutral-950 border border-neutral-800 overflow-hidden flex items-center justify-center p-2">
-                        <img src={url} alt={`Preview ${i}`} className="w-full h-full object-contain" />
-                        <span className="absolute bottom-1 right-1 text-[9px] font-mono px-1 rounded bg-black/70 text-white">
-                          #{i + 1}
-                        </span>
+                  {Array.isArray(currentProduct.gallery_images) && currentProduct.gallery_images.length > 0 && (
+                    <div className="space-y-2 pt-2">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-neutral-500">
+                        Active Verification Angles ({currentProduct.gallery_images.length}) — Click to Preview
+                      </span>
+                      <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                        {currentProduct.gallery_images.map((imgUrl, index) => (
+                          <div key={index} className="relative group aspect-square bg-white rounded-xl border border-neutral-200 p-1 overflow-hidden flex items-center justify-center shadow-xs">
+                            <img 
+                              src={imgUrl} 
+                              alt={`Angle ${index + 1}`} 
+                              className="w-full h-full object-contain cursor-pointer hover:scale-110 transition duration-200" 
+                              onClick={() => setCurrentProduct(prev => ({ ...prev, image_url: imgUrl }))}
+                              title="Click to set as primary preview"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = currentProduct.gallery_images.filter((_, i) => i !== index);
+                                setCurrentProduct(prev => ({ ...prev, gallery_images: updated }));
+                              }}
+                              className="absolute inset-0 bg-red-600/90 text-white opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-[10px] font-bold cursor-pointer"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-
-            {/* In Stock Toggle */}
-            <div className="pt-4 border-t border-neutral-800 flex items-center justify-between">
-              <div>
-                <span className="text-xs font-black uppercase tracking-wider text-white block">
-                  Immediate Storefront Availability
-                </span>
-                <p className="text-[11px] text-neutral-400">
-                  Uncheck if item is currently out of stock or on pre-order.
-                </p>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  name="in_stock"
-                  checked={form.in_stock}
+
+              {/* ----------------- PRO CONTENT FIELDS (GLOBAL POLICIES HANDLED SEPARATELY) ----------------- */}
+              
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black uppercase tracking-wider text-neutral-700">Short Summary / Overview</label>
+                <textarea
+                  name="description"
+                  rows="2"
+                  value={currentProduct.description || ""}
                   onChange={handleChange}
-                  className="sr-only peer"
+                  placeholder="Brief tagline or brief summary for product cards..."
+                  className="w-full p-3 text-xs font-semibold bg-neutral-50 border border-neutral-300 rounded-xl focus:outline-none focus:border-blue-600"
                 />
-                <div className="w-11 h-6 bg-neutral-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-              </label>
-            </div>
+              </div>
 
-            {/* Submit Button */}
-            <div className="pt-6">
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-lg shadow-blue-600/20 transition cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <RefreshCcw size={16} className="animate-spin" />
-                    <span>Writing to Supabase...</span>
-                  </>
-                ) : (
-                  <span>Publish Item to Live Store</span>
-                )}
-              </button>
-            </div>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black uppercase tracking-wider text-neutral-700 flex items-center gap-1.5">
+                  <FileText size={14} className="text-blue-600" /> Long Description & Full Technical Specifications
+                </label>
+                <textarea
+                  name="long_description"
+                  rows="5"
+                  value={currentProduct.long_description || ""}
+                  onChange={handleChange}
+                  placeholder="Enter detailed description, frame tech, material breakdown, and sweet-spot analysis..."
+                  className="w-full p-3 text-xs font-semibold bg-neutral-50 border border-neutral-300 rounded-xl focus:outline-none focus:border-blue-600 leading-relaxed"
+                />
+              </div>
 
-          </form>
+              {/* ------------------------------------------------------------------------------------------ */}
+
+              <div className="pt-4 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="px-6 py-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs font-black uppercase tracking-widest rounded-xl transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="inline-flex items-center gap-2 px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-widest rounded-xl transition shadow-lg shadow-blue-600/30 cursor-pointer disabled:opacity-50"
+                >
+                  <Save size={16} />
+                  <span>{saving ? "Saving..." : "Save Equipment"}</span>
+                </button>
+              </div>
+
+            </form>
+
+          </div>
         </div>
-      </main>
+      )}
 
     </div>
   );

@@ -15,33 +15,28 @@ const NAV_STRUCTURE = [
       {
         title: "RACKETS",
         links: [
-          { label: "Badminton", href: "/rackets?type=badminton" },
-          { label: "Tennis", href: "/rackets?type=tennis" }
+          { label: "Badminton", href: "/rackets?type=badminton" }
         ]
       },
       {
         title: "SHOP BY BRAND",
         links: [
-          { label: "Yonex", href: "/rackets?brand=yonex" },
-          { label: "Hundred", href: "/rackets?brand=hundred" },
-          { label: "Victor", href: "/rackets?brand=victor" },
-          { label: "Apacs", href: "/rackets?brand=apacs" },
-          { label: "Babolat", href: "/rackets?brand=babolat" },
-          { label: "Li-Ning", href: "/rackets?brand=li-ning" },
-          { label: "JNICE", href: "/rackets?brand=jnice" },
-          { label: "Mizuno", href: "/rackets?brand=mizuno" },
-          { label: "Kumpoo", href: "/rackets?brand=kumpoo" },
-          { label: "Kawasaki", href: "/rackets?brand=kawasaki" }
+          { label: "Yonex", href: "/rackets?brand=YONEX" },
+          { label: "Wilson", href: "/rackets?brand=WIISON" },
+          { label: "Victor", href: "/rackets?brand=VICTOR" },
+          { label: "Apacs", href: "/rackets?brand=APACS" },
+          { label: "Li-Ning", href: "/rackets?brand=LI-NING" },
+          { label: "Others", href: "/rackets?brand=OTHERS" }
         ]
       },
       {
         title: "BADMINTON SPECIALIST",
         links: [
-          { label: "Advanced Racket", href: "/rackets?player_level=advanced" },
-          { label: "Intermediate Racket", href: "/rackets?player_level=intermediate" },
-          { label: "Beginner Racket", href: "/rackets?player_level=beginner" },
-          { label: "Badminton Racket Finder", href: "/rackets?tag=finder" }
-        ]
+          { label: "Beginner Racket", href: "/rackets?player_level=Beginner" },
+          { label: "Intermediate Racket", href: "/rackets?player_level=Intermediate" },
+          { label: "Advanced Racket", href: "/rackets?player_level=Advanced" },
+          { label: "Professional Racket", href: "/rackets?player_level=Professional" },
+          { label: "Badminton Racket Finder", href: "/racket-finder" }        ]
       }
     ]
   },
@@ -53,37 +48,30 @@ const NAV_STRUCTURE = [
       {
         title: "BADMINTON SHOES",
         links: [
-          { label: "Men", href: "/shoes?gender=men" },
-          { label: "Women", href: "/shoes?gender=women" },
-          { label: "Unisex", href: "/shoes?gender=unisex" },
-          { label: "Junior", href: "/shoes?gender=junior" }
+          { label: "Men", href: "/shoes?gender=Men" },
+          { label: "Women", href: "/shoes?gender=Women" },
+          { label: "Unisex", href: "/shoes?gender=Unisex" },
+          { label: "Junior", href: "/shoes?gender=Junior" }
         ]
       },
       {
         title: "SHOES BY BRAND",
         links: [
-          { label: "Yonex", href: "/shoes?brand=yonex" },
-          { label: "Hundred", href: "/shoes?brand=hundred" },
-          { label: "Babolat", href: "/shoes?brand=babolat" },
-          { label: "Victor", href: "/shoes?brand=victor" },
-          { label: "Li-Ning", href: "/shoes?brand=li-ning" },
-          { label: "Mizuno", href: "/shoes?brand=mizuno" },
-          { label: "Kumpoo", href: "/shoes?brand=kumpoo" },
-          { label: "Kawasaki", href: "/shoes?brand=kawasaki" },
-          { label: "Apacs", href: "/shoes?brand=apacs" },
-          { label: "Wilson", href: "/shoes?brand=wilson" },
-          { label: "Asics", href: "/shoes?brand=asics" },
-          { label: "Adidas", href: "/shoes?brand=adidas" }
+          { label: "Yonex", href: "/shoes?brand=YONEX" },
+          { label: "Hundred", href: "/shoes?brand=HUNDRED" },
+          { label: "Babolat", href: "/shoes?brand=BABOLAT" },
+          { label: "Victor", href: "/shoes?brand=VICTOR" },
+          { label: "Li-Ning", href: "/shoes?brand=LI-NING" },
+          { label: "Mizuno", href: "/shoes?brand=MIZUNO" },
+          { label: "Asics", href: "/shoes?brand=ASICS" },
+          { label: "Others", href: "/shoes?brand=OTHERS" }
         ]
       },
       {
         title: "SHOP BY TYPE",
         links: [
           { label: "Shoe Finder", href: "/shoes?tag=finder" },
-          { label: "Tennis Shoes", href: "/shoes?type=tennis" },
-          { label: "Padel Shoes", href: "/shoes?type=padel" },
-          { label: "Pickleball Shoes", href: "/shoes?type=pickleball" },
-          { label: "Indoor Court Shoes", href: "/shoes?type=indoor" }
+          { label: "Indoor Court Shoes", href: "/shoes?shoe_type=Indoor Court Shoes" }
         ]
       }
     ]
@@ -96,18 +84,20 @@ const NAV_STRUCTURE = [
       {
         title: "BAGS BY TYPE",
         links: [
-          { label: "Racket Bags", href: "/bags?type=racket-bags" },
-          { label: "Backpacks", href: "/bags?type=backpacks" },
-          { label: "Tournament Bags", href: "/bags?type=tournament" }
+          { label: "Racket Bags", href: "/bags?type=Racket Bags" },
+          { label: "Backpacks", href: "/bags?type=Backpacks" },
+          { label: "Tournament Pro Bags", href: "/bags?type=Tournament Pro Bags" }
         ]
       },
       {
         title: "BAGS BY BRAND",
         links: [
-          { label: "Yonex", href: "/bags?brand=yonex" },
-          { label: "Victor", href: "/bags?brand=victor" },
-          { label: "Li-Ning", href: "/bags?brand=li-ning" },
-          { label: "Hundred", href: "/bags?brand=hundred" }
+          { label: "Yonex", href: "/bags?brand=YONEX" },
+          { label: "Victor", href: "/bags?brand=VICTOR" },
+          { label: "Li-Ning", href: "/bags?brand=LI-NING" },
+          { label: "Hundred", href: "/bags?brand=HUNDRED" },
+          { label: "Others", href: "/bags?brand=OTHERS" }
+
         ]
       }
     ]
@@ -120,18 +110,18 @@ const NAV_STRUCTURE = [
       {
         title: "CATEGORIES",
         links: [
-          { label: "Feather Shuttles", href: "/shuttles?type=feather" },
-          { label: "Synthetic Shuttles", href: "/shuttles?type=synthetic" },
-          { label: "AirShuttle", href: "/shuttles?type=airshuttle" }
+          { label: "Feather Shuttles", href: "/shuttles?type=Feather Shuttles" },
+          { label: "Synthetic / Nylon Shuttles", href: "/shuttles?type=Synthetic / Nylon " },
+          { label: "AirShuttle", href: "/shuttles?type=AirShuttle" }
         ]
       },
       {
         title: "SHUTTLES BY BRAND",
         links: [
-          { label: "Yonex AS Series", href: "/shuttles?brand=yonex" },
-          { label: "RSL", href: "/shuttles?brand=rsl" },
-          { label: "Victor", href: "/shuttles?brand=victor" },
-          { label: "Li-Ning", href: "/shuttles?brand=li-ning" }
+          { label: "Yonex AS Series", href: "/shuttles?brand=YONEX" },
+          { label: "RSL", href: "/shuttles?brand=RSL" },
+          { label: "Victor", href: "/shuttles?brand=VICTOR" },
+          { label: "Li-Ning", href: "/shuttles?brand=LI-NING" }
         ]
       }
     ]
@@ -142,20 +132,27 @@ const NAV_STRUCTURE = [
     hasChildren: true,
     subSections: [
       {
-        title: "TEAMWEAR & KITS",
+        title: "BRANDS",
         links: [
-          { label: "All Teamwear", href: "/clothing?type=teamwear" },
-          { label: "Stock Teamwear", href: "/clothing?type=stock" },
-          { label: "Club Packages", href: "/clothing?type=packages" }
+          { label: "Yonex", href: "/clothing?brand=YONEX" },
+          { label: "Victor", href: "/clothing?brand=VICTOR" },
+          { label: "Li-Ning", href: "/clothing?brand=LI-NING" },
+          { label: "Hundred", href: "/clothing?brand=HUNDRED" },
+          { label: "Nike", href: "/clothing?brand=NIKE" },
+          { label: "Adidas", href: "/clothing?brand=ADIDAS" },
+          { label: "Others", href: "/clothing?brand=OTHERS" }
         ]
       },
       {
         title: "APPAREL BY TYPE",
         links: [
-          { label: "T-Shirts & Polos", href: "/clothing?type=tops" },
-          { label: "Hoodies & Sweatshirts", href: "/clothing?type=hoodies" },
-          { label: "Shorts & Skorts", href: "/clothing?type=bottoms" },
-          { label: "Tracksuits", href: "/clothing?type=tracksuits" }
+          { label: "T-Shirts & Polos", href: "/clothing?type=T-Shirts%20%26%20Polos" },
+          { label: "Hoodies & Sweatshirts", href: "/clothing?type=Hoodies%20%26%20Sweatshirts" },
+          { label: "Shorts & Skirts", href: "/clothing?type=Shorts%20%26%20Skirts" },
+          { label: "Tracksuits", href: "/clothing?type=Tracksuits" },
+          { label: "Club Team Jerseys", href: "/clothing?type=Club Team Jerseys" },
+          { label: "International Kits", href: "/clothing?type=International Kits" },
+
         ]
       }
     ]
@@ -168,18 +165,16 @@ const NAV_STRUCTURE = [
       {
         title: "STRINGS",
         links: [
-          { label: "All Strings", href: "/strings-accessories?type=strings" },
-          { label: "Badminton String Reels", href: "/strings-accessories?type=reels" }
-        ]
+          { label: "All Strings", href: "/strings-accessories?type=Strings" }        ]
       },
       {
         title: "ACCESSORIES",
         links: [
-          { label: "Grips & Overgrips", href: "/strings-accessories?type=grips" },
-          { label: "Grip Powder", href: "/strings-accessories?type=powder" },
-          { label: "Water Bottles", href: "/strings-accessories?type=bottles" },
-          { label: "Towels & Wristbands", href: "/strings-accessories`?type=towels" },
-          { label: "Badminton Nets", href: "/strings-accessories?type=nets" }
+          { label: "Grips & Overgrips", href: "/strings-accessories?type=Grips%20%26%20Overgrips" },
+          { label: "Grip Powder", href: "/strings-accessories?type=Grip Powder" },
+          { label: "Water Bottles", href: "/strings-accessories?type=Water Bottles" },
+          { label: "Towels & Wristbands", href: "/strings-accessories?type=Towels%20%26%20Wristbands" },
+          { label: "Badminton Nets", href: "/strings-accessories?type=Badminton Nets" }
         ]
       }
     ]
@@ -242,8 +237,16 @@ export default function Navbar() {
               </button>
             </div>
 
-            {/* Centered Brand */}
-            <Link href="/" className="absolute left-1/2 -translate-x-1/2 flex items-center cursor-pointer">
+            {/* Centered Brand with Logo Image Badge */}
+            <Link href="/" className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2.5 cursor-pointer">
+              <div className="w-8 h-8 rounded-lg overflow-hidden bg-neutral-900 border border-neutral-800 flex items-center justify-center shrink-0">
+                <img 
+                  src="/images/elim-logo.png" 
+                  alt="Elim Sports" 
+                  className="w-full h-full object-cover"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+              </div>
               <span className="font-black text-lg tracking-tight text-white bg-neutral-900 px-3 py-1 rounded-lg border border-neutral-800">
                 ELIM<span className="text-blue-500 font-normal">SPORTS</span>
               </span>
@@ -272,17 +275,25 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* Desktop Header (>= 1180px) - CSUK Mixed-Case & Smooth Layout */}
+          {/* Desktop Header (>= 1180px) */}
           <div className="hidden min-[1180px]:flex items-center justify-between h-22">
             
-            {/* Logo */}
-            <Link href="/" className="flex items-center cursor-pointer flex-shrink-0 mr-8">
+            {/* Left Brand with Logo Photo Badge */}
+            <Link href="/" className="flex items-center gap-3 cursor-pointer flex-shrink-0 mr-8 group">
+              <div className="w-10 h-10 rounded-xl overflow-hidden bg-neutral-900 border border-neutral-800 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform">
+                <img 
+                  src="/images/elim-logo.png" 
+                  alt="Elim Sports Logo" 
+                  className="w-full h-full object-cover"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+              </div>
               <span className="font-black text-xl tracking-tight text-white bg-neutral-900 px-3.5 py-1.5 rounded-lg border border-neutral-800 shadow-inner">
                 ELIM<span className="text-blue-500 font-normal">SPORTS</span>
               </span>
             </Link>
 
-            {/* Primary Navigation Links (Mixed-Case Styling matching Central Sports UK) */}
+            {/* Primary Navigation Links */}
             <nav className="flex items-center space-x-6 xl:space-x-8 text-[13px] font-bold tracking-normal text-neutral-300">
               {NAV_STRUCTURE.map((category) => {
                 const isActive = activeDropdown === category.name;
@@ -348,45 +359,46 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Full-Width Mega Menu Panel with Premium Editorial Typography & Motion */}
-<div
-  className={`hidden min-[1180px]:block absolute top-full left-0 w-full bg-white text-neutral-900 border-b border-neutral-200/80 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.18)] z-50 transform-gpu transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-    activeCategoryData && activeCategoryData.hasChildren
-      ? "opacity-100 translate-y-0 pointer-events-auto visible scale-100"
-      : "opacity-0 -translate-y-3 pointer-events-none invisible scale-[0.98]"
-  }`}
-  onMouseEnter={() => activeCategoryData && setActiveDropdown(activeCategoryData.name)}
-  onMouseLeave={() => setActiveDropdown(null)}
->
-  <div className="max-w-[1920px] mx-auto px-16 lg:px-24 py-16">
-    <div className="grid grid-cols-3 gap-24 justify-center max-w-7xl mx-auto">
-      {activeCategoryData?.subSections.map((sec, idx) => (
-        <div 
-          key={sec.title} 
-          className="transition-all duration-500 ease-out"
-          style={{ transitionDelay: `${idx * 60}ms` }}
-        >
-          <h4 className="text-xs font-black uppercase tracking-[0.3em] text-neutral-400 mb-6 border-b-2 border-neutral-100 pb-3 font-sans">
-            {sec.title}
-          </h4>
-          <ul className="space-y-4">
-            {sec.links.map((link) => (
-              <li key={link.label}>
-                <Link
-                  href={link.href}
-                  onClick={() => setActiveDropdown(null)}
-                  className="text-base font-bold tracking-tight text-neutral-900 hover:text-blue-600 hover:translate-x-1.5 transition-all duration-200 block py-1.5 cursor-pointer font-sans"
-                >
-                  {link.label}
-                </Link>
-              </li>
+      {/* Full-Width Mega Menu Panel */}
+      <div
+        className={`hidden min-[1180px]:block absolute top-full left-0 w-full bg-white text-neutral-900 border-b border-neutral-200/80 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.18)] z-50 transform-gpu transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          activeCategoryData && activeCategoryData.hasChildren
+            ? "opacity-100 translate-y-0 pointer-events-auto visible scale-100"
+            : "opacity-0 -translate-y-3 pointer-events-none invisible scale-[0.98]"
+        }`}
+        onMouseEnter={() => activeCategoryData && setActiveDropdown(activeCategoryData.name)}
+        onMouseLeave={() => setActiveDropdown(null)}
+      >
+        <div className="max-w-[1920px] mx-auto px-16 lg:px-24 py-16">
+          <div className="grid grid-cols-3 gap-24 justify-center max-w-7xl mx-auto">
+            {activeCategoryData?.subSections.map((sec, idx) => (
+              <div 
+                key={sec.title} 
+                className="transition-all duration-500 ease-out"
+                style={{ transitionDelay: `${idx * 60}ms` }}
+              >
+                <h4 className="text-xs font-black uppercase tracking-[0.3em] text-neutral-400 mb-6 border-b-2 border-neutral-100 pb-3 font-sans">
+                  {sec.title}
+                </h4>
+                <ul className="space-y-4">
+                  {sec.links.map((link) => (
+                    <li key={link.label}>
+                      <Link
+                        href={link.href}
+                        onClick={() => setActiveDropdown(null)}
+                        className="text-base font-bold tracking-tight text-neutral-900 hover:text-blue-600 hover:translate-x-1.5 transition-all duration-200 block py-1.5 cursor-pointer font-sans"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
-      ))}
-    </div>
-  </div>
-</div>
+      </div>
+
       {/* Mobile Drawer Menu */}
       <div
         className={`fixed inset-y-0 left-0 w-[340px] max-w-[85vw] bg-white text-neutral-950 z-50 shadow-2xl flex flex-col transition-transform duration-300 ease-in-out ${
@@ -394,7 +406,12 @@ export default function Navbar() {
         }`}
       >
         <div className="p-5 flex items-center justify-between border-b border-neutral-200 bg-neutral-50">
-          <span className="font-black text-xs uppercase tracking-widest text-neutral-600">Store Navigation</span>
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-md overflow-hidden bg-neutral-900 flex items-center justify-center">
+              <img src="/images/elim-logo.png" alt="Elim" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+            </div>
+            <span className="font-black text-xs uppercase tracking-widest text-neutral-700">Store Navigation</span>
+          </div>
           <button
             type="button"
             onClick={() => setMobileMenuOpen(false)}

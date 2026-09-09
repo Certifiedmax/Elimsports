@@ -24,8 +24,8 @@ const HERO_SLIDES = [
     subtitle: "Precision balanced for blistering smash velocity, razor-sharp net interception, and agile defensive returns.",
     ctaLabel: "Explore All Rackets",
     href: "/rackets",
-    bgImage: "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=1920&auto=format&fit=crop",
-    watermark: "RACKETS",
+    bgImage: "https://i.pinimg.com/736x/62/4e/fe/624efefe4c130f4e8560d7d0422724a1.jpg",
+    watermark: "ELIM RACKETS",
     metrics: [
       { label: "Weights", value: "3U, 4U, 5U" },
       { label: "Balance", value: "Head-Heavy & Even" },
@@ -40,9 +40,9 @@ const HERO_SLIDES = [
     title: "PERFORMANCE COMBOS & GEAR",
     subtitle: "Get tournament-ready with handpicked performance rackets, competition feather shuttles, and court-grip footwear tailored for emerging players.",
     ctaLabel: "View Launch Deals",
-    href: "/rackets?level=intermediate", // Directs to accessible tournament-ready rackets
-    bgImage: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1920&auto=format&fit=crop",
-    watermark: "LAUNCH",
+    href: "/rackets?level=Intermediate",
+    bgImage: "https://i.pinimg.com/736x/47/52/a6/4752a6fe22c39c9beae1b7342b490be9.jpg",
+    watermark: "ELIM LAUNCH",
     metrics: [
       { label: "Starter Bundles", value: "Available" },
       { label: "Footwear", value: "High-Grip Soles" },
@@ -58,34 +58,30 @@ const HERO_SLIDES = [
     ctaLabel: "Inquire Coaching Details",
     href: "/coaching",
     isCoachingSlide: true,
-    bgImage: "https://images.unsplash.com/photo-1517649763962-0c623266ddc0?q=80&w=1920&auto=format&fit=crop",
-    watermark: "COACH"
+    bgImage: "/images/axelsen.jpg",
+    watermark: "ELIM COACHING"
   }
 ];
 
 export default function HeroBanner() {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
   const animationFrameRef = useRef(null);
   const startTimeRef = useRef(Date.now());
 
+  // Uninterrupted rotation loop that continues running even on hover
   useEffect(() => {
     startTimeRef.current = Date.now();
 
     const updateProgress = () => {
-      if (!isPaused) {
-        const elapsed = Date.now() - startTimeRef.current;
-        const currentProgress = Math.min((elapsed / SLIDE_DURATION) * 100, 100);
-        setProgress(currentProgress);
+      const elapsed = Date.now() - startTimeRef.current;
+      const currentProgress = Math.min((elapsed / SLIDE_DURATION) * 100, 100);
+      setProgress(currentProgress);
 
-        if (elapsed >= SLIDE_DURATION) {
-          setCurrentIdx((prev) => (prev + 1) % HERO_SLIDES.length);
-          startTimeRef.current = Date.now();
-          setProgress(0);
-        }
-      } else {
-        startTimeRef.current = Date.now() - (progress / 100) * SLIDE_DURATION;
+      if (elapsed >= SLIDE_DURATION) {
+        setCurrentIdx((prev) => (prev + 1) % HERO_SLIDES.length);
+        startTimeRef.current = Date.now();
+        setProgress(0);
       }
 
       animationFrameRef.current = requestAnimationFrame(updateProgress);
@@ -96,7 +92,7 @@ export default function HeroBanner() {
     return () => {
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     };
-  }, [currentIdx, isPaused]);
+  }, [currentIdx]);
 
   const handlePillClick = (idx, e) => {
     e.preventDefault();
@@ -109,33 +105,40 @@ export default function HeroBanner() {
   const active = HERO_SLIDES[currentIdx];
 
   return (
-    <div
-      className="relative w-full overflow-hidden select-none bg-neutral-950 border-b border-neutral-900 group"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-    >
+    <div className="relative w-full overflow-hidden select-none bg-neutral-950 border-b border-neutral-900 group">
       {/* Ambience Aura */}
       <div className="absolute inset-0 pointer-events-none z-0">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-900/40 via-neutral-950/90 to-neutral-950" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_var(--tw-gradient-stops))] from-sky-950/20 via-transparent to-transparent" />
       </div>
 
-      {/* Background Graphic */}
-      {active.bgImage && (
-        <div className="absolute inset-0 z-0 overflow-hidden">
-          <img
-            src={active.bgImage}
-            alt={active.title}
-            className="w-full h-full object-cover object-center opacity-20 mix-blend-luminosity scale-105 transition-transform duration-1000 ease-out"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-neutral-950 via-neutral-950/80 to-transparent" />
+      {/* Background Graphic - Rendered per slide using key mapping to force fresh mount and prevent stuck states */}
+      {HERO_SLIDES.map((slide, idx) => (
+        <div
+          key={slide.id}
+          className={`absolute inset-0 z-0 overflow-hidden transition-opacity duration-1000 ease-in-out ${
+            currentIdx === idx ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
+        >
+          {slide.bgImage && (
+            <>
+              <img
+                src={slide.bgImage}
+                alt={slide.title}
+                className="w-full h-full object-cover object-center opacity-45 mix-blend-luminosity scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-neutral-950 via-neutral-950/80 to-transparent" />
+            </>
+          )}
         </div>
-      )}
+      ))}
 
-      {/* Watermark */}
+      {/* Watermark Words */}
       {active.watermark && (
-        <div className="absolute inset-y-0 right-0 w-full flex items-center justify-end pointer-events-none pr-8 sm:pr-16 overflow-hidden opacity-[0.03] sm:opacity-[0.05] font-black text-white select-none text-[22vw] leading-none tracking-tighter">
-          {active.watermark}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden z-0">
+          <span className="text-[14vw] font-black uppercase tracking-tighter text-white/[0.04] select-none whitespace-nowrap text-center">
+            {active.watermark}
+          </span>
         </div>
       )}
 
