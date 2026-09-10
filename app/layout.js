@@ -1,8 +1,8 @@
-
 import "./globals.css";
 import TopAnnouncementBar from "@/components/TopAnnouncementBar";
 import { CartProvider } from "./CartContext";
 import Navbar from "@/components/Navbar";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata = {
   title: "Apex Sports | Authentic Tournament Rackets Kenya",
@@ -17,6 +17,7 @@ export default function RootLayout({ children }) {
           <TopAnnouncementBar />
           <Navbar />
           {children}
+          <Analytics />
         </CartProvider>
       </body>
     </html>
