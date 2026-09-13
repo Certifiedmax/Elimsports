@@ -5,26 +5,33 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 const CartContext = createContext();
 
 export function CartProvider({ children }) {
-  // Initialize directly from localStorage to prevent empty state flash on refresh
-  const [cart, setCart] = useState(() => {
-    if (typeof window === "undefined") return [];
+  // Always start empty — identical on server and client.
+  // localStorage is loaded after mount to avoid hydration mismatches.
+  const [cart, setCart] = useState([]);
+  const [hydrated, setHydrated] = useState(false);
+
+  // Load persisted cart after mount
+  useEffect(() => {
     try {
       const saved = localStorage.getItem("apex_cart");
-      return saved ? JSON.parse(saved) : [];
+      if (saved) setCart(JSON.parse(saved));
     } catch (e) {
       console.error(e);
-      return [];
+    } finally {
+      setHydrated(true);
     }
-  });
+  }, []);
 
-  // Save to localStorage whenever cart updates
+  // Persist cart changes — but ONLY after hydration,
+  // otherwise the first render would overwrite storage with [].
   useEffect(() => {
+    if (!hydrated) return;
     try {
       localStorage.setItem("apex_cart", JSON.stringify(cart));
     } catch (e) {
       console.error(e);
     }
-  }, [cart]);
+  }, [cart, hydrated]);
 
   const addToCart = (product, quantity = 1, customSpecs = []) => {
     // Generate a deterministic, non-scrambled unique signature using join("|")
@@ -66,6 +73,7 @@ export function CartProvider({ children }) {
   const clearCart = () => setCart([]);
 
   const subtotal = cart.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0);
+  const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <CartContext.Provider
@@ -76,6 +84,8 @@ export function CartProvider({ children }) {
         updateQuantity,
         clearCart,
         subtotal,
+        itemCount,
+        hydrated,
       }}
     >
       {children}
